@@ -1,0 +1,65 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        canvas: 'var(--canvas)',
+        surface: 'var(--surface)',
+        elevated: 'var(--elevated)',
+        overlay: 'var(--overlay)',
+        field: 'var(--field)',
+        chrome: 'var(--chrome)',
+        border: 'var(--border)',
+        strong: 'var(--border-strong)',
+        text: 'var(--text)',
+        muted: 'var(--muted)',
+        faint: 'var(--faint)',
+        ink: 'var(--ink)',
+        'ink-fg': 'var(--ink-fg)',
+        accent: 'var(--accent)',
+        'accent-fg': 'var(--accent-fg)',
+        'accent-soft': 'var(--accent-soft)',
+        danger: 'var(--danger)',
+        'danger-soft': 'var(--danger-soft)',
+        grid: 'var(--grid)',
+      },
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        chrome: 'var(--shadow-chrome)',
+        panel: 'var(--shadow-panel)',
+        menu: 'var(--shadow-menu)',
+        focus: '0 0 0 3px var(--accent-ring)',
+        'focus-danger': '0 0 0 3px var(--danger-soft)',
+      },
+      borderRadius: {
+        sm: '5px',
+        DEFAULT: '6px',
+        md: '8px',
+        lg: '10px',
+        xl: '14px',
+      },
+      fontFamily: {
+        sans: ['"Instrument Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['11px', { lineHeight: '1.4' }],
+        xs: ['12px', { lineHeight: '1.45' }],
+        sm: ['13px', { lineHeight: '1.45' }],
+        base: ['14px', { lineHeight: '1.5' }],
+        md: ['15px', { lineHeight: '1.4' }],
+        lg: ['17px', { lineHeight: '1.3' }],
+        xl: ['20px', { lineHeight: '1.25' }],
+      },
+      transitionTimingFunction: {
+        out: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+    },
+  },
+  plugins: [],
+}
