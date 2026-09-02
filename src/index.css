@@ -196,18 +196,29 @@
 
 /* Handles: hidden until the node is hovered or selected, or a connection is in progress. */
 .react-flow__handle {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   background: var(--surface);
   border: 2px solid var(--border-strong);
   opacity: 0;
+  z-index: 5;
+  pointer-events: all;
   transition: opacity 140ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.react-flow__handle::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
 }
 
 .react-flow__node:hover .react-flow__handle,
 .react-flow__node.selected .react-flow__handle,
 .react-flow:has(.react-flow__connectionline) .react-flow__handle,
-.react-flow:has(.react-flow__connection) .react-flow__handle {
+.react-flow:has(.react-flow__connection) .react-flow__handle,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto,
+.react-flow__handle.connectionindicator {
   opacity: 1;
 }
 

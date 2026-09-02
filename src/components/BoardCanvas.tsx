@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ReactFlow,
   Background,
+  ConnectionMode,
   useNodesState,
   useEdgesState,
   type OnConnect,
+  type OnConnectStart,
+  type OnConnectEnd,
   type OnNodesChange,
   type OnNodesDelete,
   type OnEdgesDelete,
@@ -29,6 +32,7 @@ import { useBoardNavigation } from '@/hooks/useBoardNavigation'
 import { useNodeActions } from '@/hooks/useNodeActions'
 import { useTheme } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
+import { pickHandles, sourceTargetForDrag } from '@/lib/connect'
 import { cn } from '@/lib/cn'
 import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceList } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
@@ -76,6 +80,7 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
   const { executeAction } = useNodeActions({ pushBoard, notify })
   const [nodes, setNodes, handleNodesChange] = useNodesState<Node<AtreidesNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const connectFromId = useRef<string | null>(null)
 
   const onNodesChange: OnNodesChange<Node<AtreidesNodeData>> = useCallback(
     (changes) => {
@@ -145,19 +150,64 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
     setEdgeMenu(null)
   }, [currentBoardId])
 
-  const onConnect: OnConnect = useCallback(
-    (params) => {
-      if (!params.source || !params.target) return
+  const connectNodes = useCallback(
+    (fromId: string, toId: string) => {
+      if (!fromId || !toId || fromId === toId) return
+      const from = nodes.find(n => n.id === fromId)
+      const to = nodes.find(n => n.id === toId)
+      const geo = from && to
+        ? pickHandles(from, to)
+        : { sourceHandle: 'right' as const, targetHandle: 'left' as const }
       addEdge({
         id: crypto.randomUUID(),
-        source: params.source,
-        target: params.target,
-        sourceHandle: params.sourceHandle ?? null,
-        targetHandle: params.targetHandle ?? null,
+        source: fromId,
+        target: toId,
+        sourceHandle: geo.sourceHandle,
+        targetHandle: geo.targetHandle,
         edgeType: 'default',
       })
     },
-    [addEdge]
+    [addEdge, nodes],
+  )
+
+  const onConnectStart: OnConnectStart = useCallback((_event, params) => {
+    connectFromId.current = params.nodeId ?? null
+  }, [])
+
+  const onConnect: OnConnect = useCallback(
+    (params) => {
+      const fromId = connectFromId.current ?? params.source
+      const { source, target } = sourceTargetForDrag(fromId, params)
+      connectNodes(source, target)
+      connectFromId.current = null
+    },
+    [connectNodes],
+  )
+
+  const onConnectEnd: OnConnectEnd = useCallback(
+    (event, state) => {
+      const fromId = connectFromId.current ?? state.fromNode?.id
+      connectFromId.current = null
+      if (state.isValid) return
+      if (!fromId) return
+
+      const point = 'changedTouches' in event && event.changedTouches[0]
+        ? event.changedTouches[0]
+        : event as MouseEvent
+      const stack = document.elementsFromPoint(point.clientX, point.clientY)
+      let targetId: string | null = null
+      for (const el of stack) {
+        const nodeEl = el instanceof Element ? el.closest('.react-flow__node') : null
+        const id = nodeEl?.getAttribute('data-id')
+        if (id && id !== fromId) {
+          targetId = id
+          break
+        }
+      }
+      if (!targetId) return
+      connectNodes(fromId, targetId)
+    },
+    [connectNodes],
   )
 
   // Backspace/Delete in React Flow only mutates local state; mirror it into the document.
@@ -274,7 +324,11 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
         onEdgesChange={onEdgesChange}
         onNodesDelete={onNodesDelete}
         onEdgesDelete={onEdgesDelete}
+        onConnectStart={onConnectStart}
         onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
+        connectionMode={ConnectionMode.Loose}
+        connectionRadius={80}
         onEdgeClick={onEdgeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeClick={onNodeClick}

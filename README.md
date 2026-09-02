@@ -23,6 +23,8 @@ diagramkit stop
 
 `diagramkit help` lists the rest (`status`, `logs`, `validate`, flags for port and host).
 
+`diagramkit serve` uses the production UI in `dist/`. `npm run dev` (and `diagramkit serve --dev`) uses live source. After UI changes, `diagramkit serve` rebuilds if source is newer; hard-refresh or `diagramkit stop && diagramkit serve` if a process was already running.
+
 From source without installing: `npm install && npm run dev` (UI at http://localhost:5173).
 
 ## How it stores data

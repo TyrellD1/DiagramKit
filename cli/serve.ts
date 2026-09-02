@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcess, type StdioOptions } from 'node:child_process'
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { appDir } from '../server/store.ts'
@@ -102,14 +102,65 @@ export async function waitForHealth(base: string, timeoutMs = 20000) {
   return null
 }
 
-function ensureBuilt() {
+const UI_INPUTS = [
+  'src',
+  'index.html',
+  'package.json',
+  'vite.config.ts',
+  'tailwind.config.cjs',
+  'postcss.config.cjs',
+]
+
+function newestMtime(target: string) {
+  let latest = 0
+  const walk = (p: string) => {
+    let st
+    try {
+      st = statSync(p)
+    } catch {
+      return
+    }
+    if (st.isDirectory()) {
+      let names: string[]
+      try {
+        names = readdirSync(p)
+      } catch {
+        return
+      }
+      for (const name of names) {
+        if (name === 'node_modules' || name === 'dist' || name.startsWith('.')) continue
+        walk(path.join(p, name))
+      }
+      return
+    }
+    if (st.mtimeMs > latest) latest = st.mtimeMs
+  }
+  walk(target)
+  return latest
+}
+
+export function distIsStale() {
   const index = path.join(repoRoot(), 'dist', 'index.html')
-  if (existsSync(index)) return
-  console.error('UI not built yet. Running npm run build...')
+  if (!existsSync(index)) return true
+  const builtAt = statSync(index).mtimeMs
+  let source = 0
+  for (const rel of UI_INPUTS) {
+    source = Math.max(source, newestMtime(path.join(repoRoot(), rel)))
+  }
+  return source > builtAt + 500
+}
+
+/** Rebuild the production UI when dist is missing or older than source. Returns true if it built. */
+export function ensureBuilt() {
+  const index = path.join(repoRoot(), 'dist', 'index.html')
+  const missing = !existsSync(index)
+  if (!missing && !distIsStale()) return false
+  console.error(missing ? 'UI not built yet. Running npm run build...' : 'Source is newer than dist. Rebuilding UI...')
   const result = spawnSync('npm', ['run', 'build'], { cwd: repoRoot(), stdio: 'inherit' })
   if (result.status !== 0) {
     die('build failed. Fix that, or run: diagramkit serve --dev')
   }
+  return true
 }
 
 function tsxBin() {

@@ -17,7 +17,7 @@ From a repo checkout:
 ./install.sh
 ```
 
-Puts `diagramkit` on `$DIAGRAMKIT_BIN_DIR` or `~/.local/bin`. Needs Node 18+.
+Puts `diagramkit` on `$DIAGRAMKIT_BIN_DIR` or `~/.local/bin`. Needs Node 18+. `diagramkit version` prints the package version, git revision, and checkout path so you can tell which clone the binary is.
 
 Or from the checkout without installing: `./bin/diagramkit help`.
 
@@ -26,7 +26,7 @@ Or from the checkout without installing: `./bin/diagramkit help`.
 ```sh
 diagramkit help
 diagramkit help open
-diagramkit version
+diagramkit version                    # version, git rev, checkout path
 
 diagramkit serve                          # background; default port 3001
 diagramkit serve --port 4000 --dev -f     # Vite + API, foreground

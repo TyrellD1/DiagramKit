@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
 import {
   attachWorkspace,
   listAttachedWorkspaces,
@@ -10,12 +8,15 @@ import { helpText } from './help.ts'
 import { parseArgv, type CliFlags } from './parse.ts'
 import { die, EXIT, formatIssues, hint } from './print.ts'
 import { repoRoot } from './root.ts'
+import { readVersion } from './version.ts'
 import { validateWorkspace } from './schema.ts'
 import {
   apiUrl,
   DEFAULT_HOST,
   DEFAULT_PORT,
   DEFAULT_WEB_PORT,
+  distIsStale,
+  ensureBuilt,
   fetchHealth,
   openInBrowser,
   printLogs,
@@ -27,8 +28,7 @@ import {
 } from './serve.ts'
 
 async function version() {
-  const pkg = JSON.parse(await readFile(path.join(repoRoot(), 'package.json'), 'utf8')) as { version: string }
-  console.log(pkg.version ?? '0.0.0')
+  console.log(await readVersion(repoRoot()))
 }
 
 async function detectUiUrl(opts: ServeOptions) {
@@ -188,6 +188,10 @@ async function cmdServe(flags: CliFlags) {
   const opts = serveOpts(flags)
   const existing = await readRunState()
   if (existing) {
+    if (existing.mode === 'prod' && distIsStale()) {
+      ensureBuilt()
+      hint('Hard-refresh the browser, or restart: diagramkit stop && diagramkit serve')
+    }
     console.log('Already running')
     console.log(`  pid   ${existing.pid}`)
     console.log(`  url   ${existing.url}`)

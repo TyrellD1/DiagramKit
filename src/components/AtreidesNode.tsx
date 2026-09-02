@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from 'react'
+import { Fragment, memo, type ReactNode } from 'react'
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import ReactMarkdown from 'react-markdown'
 import type { AtreidesNodeData, LinkType } from '@/types'
@@ -29,6 +29,13 @@ const refClass =
   'nodrag group/ref flex items-center gap-1.5 min-w-0 py-[3px] text-xs text-muted no-underline bg-transparent border-none p-0 ' +
   'cursor-pointer text-left transition-colors duration-100 hover:text-text'
 
+const NODE_HANDLES = [
+  { id: 'top', position: Position.Top },
+  { id: 'right', position: Position.Right },
+  { id: 'bottom', position: Position.Bottom },
+  { id: 'left', position: Position.Left },
+] as const
+
 function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
   const showChildLink = data.hasLink || !!data.childLink
   const isBoard = !!data.linkedBoardId || data.childLink?.type === 'board'
@@ -49,8 +56,12 @@ function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
           : 'border-border shadow-card hover:border-strong hover:shadow-card-hover',
       )}
     >
-      <Handle id="top" type="target" position={Position.Top} />
-      <Handle id="left" type="target" position={Position.Left} />
+      {NODE_HANDLES.map(({ id, position }) => (
+        <Fragment key={id}>
+          <Handle type="target" id={id} position={position} isConnectableStart={false} aria-hidden />
+          <Handle type="source" id={id} position={position} aria-label={`Connect from ${id}`} />
+        </Fragment>
+      ))}
 
       <div className="flex items-start justify-between gap-3">
         <span className="font-semibold text-md leading-[1.3] tracking-[-0.011em] text-text break-words [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] overflow-hidden">
@@ -137,9 +148,6 @@ function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
           })}
         </div>
       )}
-
-      <Handle id="bottom" type="source" position={Position.Bottom} />
-      <Handle id="right" type="source" position={Position.Right} />
     </div>
   )
 }

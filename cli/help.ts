@@ -13,7 +13,7 @@ Commands:
   validate <path>    Check workspace JSON against the schema
   workspaces         List attached workspaces
   help [command]     Show help
-  version            Print version
+  version            Print version, git revision, and checkout path
 
 Exit codes:
   0  ok
@@ -29,6 +29,9 @@ const SERVE = `diagramkit serve [options]
 
 Start the DiagramKit server. Background by default (pid + logs under
 the app home, usually ~/.diagramkit).
+
+Without --dev this serves the production UI from dist/. Source newer
+than dist is rebuilt automatically. npm run dev always uses live source.
 
 Options:
   -p, --port <n>       API / production UI port (default 3001)
@@ -153,7 +156,7 @@ const HELP: Record<string, string> = {
   validate: VALIDATE,
   workspaces: WORKSPACES,
   help: GLOBAL,
-  version: `diagramkit version\n\nPrint the CLI version.\n`,
+  version: `diagramkit version\n\nPrint package.json version, git revision, and the checkout this binary runs from.\n`,
 }
 
 export function helpText(command?: string) {

@@ -118,7 +118,13 @@ export function useBoard(boardId: string | null) {
   }, [apply])
 
   const addEdge = useCallback((edge: BoardDocument['edges'][number]) => {
-    apply(b => ({ ...b, edges: [...b.edges, edge] }))
+    apply(b => {
+      if (b.edges.some(e => e.source === edge.source && e.target === edge.target
+        && e.sourceHandle === edge.sourceHandle && e.targetHandle === edge.targetHandle)) {
+        return b
+      }
+      return { ...b, edges: [...b.edges, edge] }
+    })
   }, [apply])
 
   const updateEdge = useCallback((edgeId: string, edgeType: string) => {
