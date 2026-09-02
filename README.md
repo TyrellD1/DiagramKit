@@ -2,7 +2,7 @@
 
 ![DiagramKit](docs/header.png)
 
-A spatial board for notes, projects, and links. Everything lives as JSON on your machine. No account, no database.
+A hierarchical spatial board tool for creating mind maps and workflows.
 
 ## Install
 

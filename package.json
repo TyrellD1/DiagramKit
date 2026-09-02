@@ -1,7 +1,7 @@
 {
   "name": "diagramkit",
   "version": "0.1.0",
-  "description": "Spatial graph organizer.",
+  "description": "A hierarchical spatial board tool for creating mind maps and workflows.",
   "license": "MIT",
   "private": true,
   "type": "module",
