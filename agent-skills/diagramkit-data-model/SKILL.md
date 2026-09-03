@@ -61,7 +61,7 @@ Schema changes: add `migrations/NNN_slug.ts` and never edit a shipped file. See 
 {
   id: string
   title: string
-  description: string | null   // markdown, rendered on the card
+  description: string | null   // markdown (GFM tables, strikethrough, task lists), rendered on the card
   x: number
   y: number
   enterBoardId: string | null  // nested child board (tree membership)

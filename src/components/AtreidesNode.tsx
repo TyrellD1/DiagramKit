@@ -3,6 +3,7 @@ import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import ReactMarkdown from 'react-markdown'
 import type { AtreidesNodeData, LinkType } from '@/types'
 import { cn } from '@/lib/cn'
+import { cardMarkdownComponents, cardRemarkPlugins } from './CardMarkdown'
 import { targetHandleId } from '@/lib/connect'
 import {
   CARD_EDGE_CLASS,
@@ -58,7 +59,7 @@ function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
   return (
     <div
       className={cn(
-        'group/node relative border rounded-lg px-4 pt-3 pb-3.5 min-w-[168px] max-w-[360px] text-text',
+        'group/node relative border rounded-lg px-4 pt-3 pb-3.5 min-w-[168px] max-w-[360px] has-[table]:max-w-[40rem] text-text',
         'transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out',
         CARD_FILL_CLASS[color],
         borderStyle === 'dashed' ? 'border-dashed' : 'border-solid',
@@ -106,27 +107,7 @@ function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
 
       {data.description && (
         <div className="card-prose mt-1.5 text-xs text-muted leading-[1.5] break-words">
-          <ReactMarkdown
-            components={{
-              h1: ({ children }) => <h1 className="text-text text-base font-semibold mt-2 mb-1">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-text text-sm font-semibold mt-2 mb-1">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-text text-xs font-semibold mt-2 mb-0.5">{children}</h3>,
-              p: ({ children }) => <p className="m-0 mb-1.5 last:mb-0 whitespace-pre-wrap">{children}</p>,
-              strong: ({ children }) => <strong className="font-semibold text-text">{children}</strong>,
-              em: ({ children }) => <em>{children}</em>,
-              code: ({ children }) => <code className="font-mono text-[11px] text-text bg-elevated border border-border rounded-sm px-1 py-px">{children}</code>,
-              ul: ({ children }) => <ul className="m-0 mb-1.5 pl-3.5 list-disc marker:text-faint">{children}</ul>,
-              ol: ({ children }) => <ol className="m-0 mb-1.5 pl-3.5 list-decimal marker:text-faint">{children}</ol>,
-              li: ({ children }) => <li className="m-0">{children}</li>,
-              a: ({ href, children }) => (
-                <a href={href} target="_blank" rel="noopener noreferrer" className="nodrag text-text underline decoration-strong underline-offset-2 hover:decoration-accent" onClick={e => e.stopPropagation()}>
-                  {children}
-                </a>
-              ),
-              hr: () => <hr className="my-2 border-0 border-t border-border" />,
-              blockquote: ({ children }) => <blockquote className="m-0 my-1.5 pl-2.5 border-l border-strong text-muted italic">{children}</blockquote>,
-            }}
-          >
+          <ReactMarkdown remarkPlugins={cardRemarkPlugins} components={cardMarkdownComponents}>
             {data.description}
           </ReactMarkdown>
         </div>
