@@ -37,6 +37,7 @@ import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
 import { activeWorkspaceId } from '@/lib/route'
 import { cn } from '@/lib/cn'
+import { uuid } from '@/lib/uuid'
 import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceIndex, WorkspaceList } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
 
@@ -182,7 +183,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
         ? pickHandles(from, to)
         : { sourceHandle: 'right' as const, targetHandle: 'left' as const }
       addEdge({
-        id: crypto.randomUUID(),
+        id: uuid(),
         source: fromId,
         target: toId,
         sourceHandle: parseHandleId(fromHandle) ?? geo.sourceHandle,
@@ -434,7 +435,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
           onClose={() => setCreateDialogPos(null)}
           onCreate={(title, position) => {
             addNode({
-              id: crypto.randomUUID(),
+              id: uuid(),
               title,
               description: null,
               x: position.x,

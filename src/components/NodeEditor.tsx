@@ -3,6 +3,7 @@ import BoardAutocomplete from './BoardAutocomplete'
 import { Button, Field, Kbd, SectionLabel, Select, TextArea, TextInput } from './ui/controls'
 import { CloseIcon, FolderIcon, GlobeIcon, LayersIcon, PlusIcon, TerminalIcon, TrashIcon, ArrowRightIcon, BorderSolidIcon, BorderDashedIcon, BorderNoneIcon } from './ui/icons'
 import { cn } from '@/lib/cn'
+import { uuid } from '@/lib/uuid'
 import type { BoardNode, ChildLink, ChildLinkType, AtreidesNodeData, ReferenceLink, LinkType, CardColor, CardBorderStyle } from '@/types'
 import {
   CARD_BORDER_LABEL,
@@ -207,7 +208,7 @@ export default function NodeEditor({
   const handleAddRef = () => {
     if (!refName.trim() || !refValue.trim()) return
     onAddRef({
-      id: crypto.randomUUID(),
+      id: uuid(),
       name: refName.trim(),
       type: refType,
       target: refValue.trim(),
