@@ -1,6 +1,8 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { currentSchemaVersion } from '../migrations/run.ts'
 import { expandPath } from '../server/store.ts'
+import { CARD_BORDER_STYLES, CARD_COLORS, isCardBorderStyle, isCardColor } from '../src/lib/cardStyle.ts'
 
 export interface SchemaIssue {
   file: string
@@ -17,8 +19,8 @@ export interface ValidateResult {
 
 const INDEX_KEYS = new Set(['rootBoardId', 'boards'])
 const INDEX_BOARD_KEYS = new Set(['id', 'title'])
-const BOARD_KEYS = new Set(['id', 'title', 'nodes', 'edges'])
-const NODE_KEYS = new Set(['id', 'title', 'description', 'x', 'y', 'enterBoardId', 'childLink', 'refs'])
+const BOARD_KEYS = new Set(['schemaVersion', 'id', 'title', 'nodes', 'edges'])
+const NODE_KEYS = new Set(['id', 'title', 'description', 'x', 'y', 'enterBoardId', 'childLink', 'refs', 'color', 'borderStyle'])
 const EDGE_KEYS = new Set(['id', 'source', 'target', 'sourceHandle', 'targetHandle', 'edgeType'])
 const REF_KEYS = new Set(['id', 'name', 'type', 'target'])
 const URL_LINK_KEYS = new Set(['type', 'value'])
@@ -212,6 +214,15 @@ async function validateBoardFile(
     push(file, `$.${key}`, `unknown key "${key}"`)
   }
 
+  if (data.schemaVersion !== undefined) {
+    const current = currentSchemaVersion()
+    if (typeof data.schemaVersion !== 'number' || !Number.isInteger(data.schemaVersion) || data.schemaVersion < 1) {
+      push(file, '$.schemaVersion', 'expected a positive integer')
+    } else if (data.schemaVersion > current) {
+      push(file, '$.schemaVersion', `newer than this DiagramKit (current is ${current})`)
+    }
+  }
+
   if (data.id !== expectedId) {
     push(file, '$.id', `expected "${expectedId}" (must match filename and index.json)`)
   }
@@ -283,6 +294,13 @@ function validateNode(
     push(file, `${jsonPath}.enterBoardId`, 'expected a string or null')
   } else if (typeof node.enterBoardId === 'string' && node.enterBoardId && !boardIds.has(node.enterBoardId)) {
     push(file, `${jsonPath}.enterBoardId`, `board "${node.enterBoardId}" is not in this workspace`)
+  }
+
+  if (node.color !== undefined && !isCardColor(node.color)) {
+    push(file, `${jsonPath}.color`, `expected "${CARD_COLORS.join('" | "')}"`)
+  }
+  if (node.borderStyle !== undefined && !isCardBorderStyle(node.borderStyle)) {
+    push(file, `${jsonPath}.borderStyle`, `expected "${CARD_BORDER_STYLES.join('" | "')}"`)
   }
 
   validateChildLink(file, `${jsonPath}.childLink`, node.childLink, boardIds, push)

@@ -26,6 +26,12 @@ module.exports = {
         danger: 'var(--danger)',
         'danger-soft': 'var(--danger-soft)',
         grid: 'var(--grid)',
+        'card-red': 'var(--card-red)',
+        'card-yellow': 'var(--card-yellow)',
+        'card-blue': 'var(--card-blue)',
+        'card-red-edge': 'var(--card-red-edge)',
+        'card-yellow-edge': 'var(--card-yellow-edge)',
+        'card-blue-edge': 'var(--card-blue-edge)',
       },
       boxShadow: {
         card: 'var(--shadow-card)',

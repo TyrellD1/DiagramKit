@@ -41,6 +41,13 @@
   --edge-hover: oklch(0.66 0.012 72);
   --minimap-mask: oklch(0.10 0.006 65 / 0.72);
 
+  --card-red: oklch(0.28 0.072 22);
+  --card-red-edge: oklch(0.72 0.1 22 / 0.5);
+  --card-yellow: oklch(0.29 0.068 95);
+  --card-yellow-edge: oklch(0.78 0.09 95 / 0.48);
+  --card-blue: oklch(0.27 0.068 250);
+  --card-blue-edge: oklch(0.7 0.09 250 / 0.5);
+
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 24px -12px oklch(0 0 0 / 0.5);
   --shadow-card-hover: 0 1px 2px oklch(0 0 0 / 0.4), 0 14px 36px -14px oklch(0 0 0 / 0.65);
   --shadow-chrome: 0 1px 2px oklch(0 0 0 / 0.4), 0 12px 32px -12px oklch(0 0 0 / 0.6);
@@ -79,6 +86,13 @@
   --edge: oklch(0.66 0.012 70);
   --edge-hover: oklch(0.42 0.015 65);
   --minimap-mask: oklch(0.96 0.008 85 / 0.72);
+
+  --card-red: oklch(0.955 0.038 18);
+  --card-red-edge: oklch(0.52 0.09 18 / 0.28);
+  --card-yellow: oklch(0.962 0.044 95);
+  --card-yellow-edge: oklch(0.58 0.09 90 / 0.28);
+  --card-blue: oklch(0.952 0.034 250);
+  --card-blue-edge: oklch(0.48 0.08 250 / 0.26);
 
   --shadow-card: 0 1px 2px oklch(0.3 0.02 70 / 0.06), 0 8px 24px -12px oklch(0.3 0.02 70 / 0.18);
   --shadow-card-hover: 0 1px 2px oklch(0.3 0.02 70 / 0.08), 0 14px 36px -14px oklch(0.3 0.02 70 / 0.28);
@@ -194,7 +208,9 @@
   stroke-dasharray: 4 4;
 }
 
-/* Handles: hidden until the node is hovered or selected, or a connection is in progress. */
+/* Handles: hidden until the node is hovered, or a connection is in progress.
+   Selected nodes stay quiet — otherwise clicking a card leaves the dots up.
+   React Flow's recommended approach is CSS opacity, not unmounting Handle. */
 .react-flow__handle {
   width: 11px;
   height: 11px;
@@ -213,12 +229,11 @@
 }
 
 .react-flow__node:hover .react-flow__handle,
-.react-flow__node.selected .react-flow__handle,
 .react-flow:has(.react-flow__connectionline) .react-flow__handle,
 .react-flow:has(.react-flow__connection) .react-flow__handle,
+.react-flow.connecting .react-flow__handle,
 .react-flow__handle.connectingfrom,
-.react-flow__handle.connectingto,
-.react-flow__handle.connectionindicator {
+.react-flow__handle.connectingto {
   opacity: 1;
 }
 

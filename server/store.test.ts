@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
@@ -15,6 +15,7 @@ import {
   scaffoldWorkspace,
   switchWorkspace,
 } from './store.ts'
+import { currentSchemaVersion } from '../migrations/run.ts'
 
 describe('json board store', () => {
   let dir: string
@@ -38,6 +39,7 @@ describe('json board store', () => {
     expect(workspace.rootBoardId).toBe(workspace.boards[0].id)
 
     const board = await readBoard(workspace.rootBoardId)
+    expect(board.schemaVersion).toBe(currentSchemaVersion())
     expect(board.nodes).toEqual([])
     expect(board.edges).toEqual([])
   })
@@ -55,6 +57,8 @@ describe('json board store', () => {
       enterBoardId: child.id,
       childLink: null,
       refs: [],
+      color: 'default',
+      borderStyle: 'solid',
     })
     await saveBoard(home)
 
@@ -132,5 +136,32 @@ describe('json board store', () => {
     await expect(detachWorkspace('default')).rejects.toThrow('Cannot detach the default workspace')
     const list = await listAttachedWorkspaces()
     expect(list.workspaces.some(w => w.id === 'default')).toBe(true)
+  })
+
+  test('migrates a legacy board on read and persists schemaVersion', async () => {
+    const workspace = await listWorkspace()
+    const file = path.join(dir, 'boards', `${workspace.rootBoardId}.json`)
+    await writeFile(file, JSON.stringify({
+      id: workspace.rootBoardId,
+      title: 'Home',
+      nodes: [{
+        id: 'n1',
+        title: 'A',
+        description: null,
+        x: 0,
+        y: 0,
+        enterBoardId: null,
+        childLink: null,
+        refs: [],
+      }],
+      edges: [],
+    }, null, 2) + '\n')
+
+    const board = await readBoard(workspace.rootBoardId)
+    expect(board.schemaVersion).toBe(currentSchemaVersion())
+    expect(board.nodes[0]).toMatchObject({ color: 'default', borderStyle: 'solid' })
+
+    const raw = JSON.parse(await readFile(file, 'utf8')) as { schemaVersion: number }
+    expect(raw.schemaVersion).toBe(currentSchemaVersion())
   })
 })

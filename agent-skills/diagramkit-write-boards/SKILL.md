@@ -44,7 +44,7 @@ Base: `http://127.0.0.1:3001/api` (or `/api` from the Vite origin).
 | PUT | `/boards/:id` | Full `BoardDocument` | `body.id` must match URL. Replaces the file |
 | DELETE | `/boards/:id` | | Cannot delete the root board |
 
-There are no row-level node/edge endpoints. Load the board, mutate `nodes`/`edges` in memory, PUT the whole document.
+There are no row-level node/edge endpoints. Load the board, mutate `nodes`/`edges` in memory, PUT the whole document. Include `schemaVersion` (currently `2`). Missing version is treated as `0` and migrated on read/write.
 
 ## Create a nested child board
 
@@ -68,7 +68,9 @@ Append to `nodes`:
   "y": 80,
   "enterBoardId": null,
   "childLink": null,
-  "refs": []
+  "refs": [],
+  "color": "default",
+  "borderStyle": "solid"
 }
 ```
 

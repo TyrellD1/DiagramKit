@@ -3,6 +3,13 @@ import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import ReactMarkdown from 'react-markdown'
 import type { AtreidesNodeData, LinkType } from '@/types'
 import { cn } from '@/lib/cn'
+import { targetHandleId } from '@/lib/connect'
+import {
+  CARD_EDGE_CLASS,
+  CARD_FILL_CLASS,
+  normalizeCardBorderStyle,
+  normalizeCardColor,
+} from '@/lib/cardStyle'
 import { ArrowUpRightIcon, FolderIcon, GlobeIcon, LayersIcon, TerminalIcon } from './ui/icons'
 
 type AtreidesNodeType = Node<AtreidesNodeData, 'atreides'>
@@ -37,6 +44,8 @@ const NODE_HANDLES = [
 ] as const
 
 function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
+  const color = normalizeCardColor(data.color)
+  const borderStyle = normalizeCardBorderStyle(data.borderStyle)
   const showChildLink = data.hasLink || !!data.childLink
   const isBoard = !!data.linkedBoardId || data.childLink?.type === 'board'
 
@@ -49,16 +58,25 @@ function AtreidesNode({ data, selected }: NodeProps<AtreidesNodeType>) {
   return (
     <div
       className={cn(
-        'group/node relative bg-surface border rounded-lg px-4 pt-3 pb-3.5 min-w-[168px] max-w-[360px] text-text',
-        'transition-[border-color,box-shadow,transform] duration-150 ease-out',
+        'group/node relative border rounded-lg px-4 pt-3 pb-3.5 min-w-[168px] max-w-[360px] text-text',
+        'transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out',
+        CARD_FILL_CLASS[color],
+        borderStyle === 'dashed' ? 'border-dashed' : 'border-solid',
         selected
-          ? 'border-accent shadow-[0_0_0_3px_var(--accent-ring),var(--shadow-card-hover)]'
-          : 'border-border shadow-card hover:border-strong hover:shadow-card-hover',
+          ? cn(
+              'border-accent shadow-[0_0_0_3px_var(--accent-ring),var(--shadow-card-hover)]',
+              borderStyle === 'none' && 'border-solid',
+            )
+          : cn(
+              'shadow-card hover:shadow-card-hover',
+              borderStyle === 'none' ? 'border-transparent' : CARD_EDGE_CLASS[color],
+              borderStyle !== 'none' && color === 'default' && 'hover:border-strong',
+            ),
       )}
     >
       {NODE_HANDLES.map(({ id, position }) => (
         <Fragment key={id}>
-          <Handle type="target" id={id} position={position} isConnectableStart={false} aria-hidden />
+          <Handle type="target" id={targetHandleId(id)} position={position} isConnectableStart={false} aria-hidden />
           <Handle type="source" id={id} position={position} aria-label={`Connect from ${id}`} />
         </Fragment>
       ))}

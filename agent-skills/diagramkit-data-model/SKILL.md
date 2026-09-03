@@ -45,12 +45,15 @@ Writes are atomic: temp file next to the target, then `rename`.
 
 ```ts
 {
+  schemaVersion: number        // current is 2; missing means 0 (legacy)
   id: string
   title: string
   nodes: BoardNode[]
   edges: BoardEdge[]
 }
 ```
+
+Schema changes: add `migrations/NNN_slug.ts` and never edit a shipped file. See `AGENTS.md`.
 
 ## BoardNode
 
@@ -64,6 +67,8 @@ Writes are atomic: temp file next to the target, then `rename`.
   enterBoardId: string | null  // nested child board (tree membership)
   childLink: ChildLink | null  // primary action on the card arrow
   refs: ReferenceLink[]        // extra links listed on the card
+  color: "default" | "red" | "yellow" | "blue"   // pastel fill; default is the surface
+  borderStyle: "solid" | "dashed" | "none"       // default is solid
 }
 ```
 
@@ -82,7 +87,7 @@ Writes are atomic: temp file next to the target, then `rename`.
 { id, source, target, sourceHandle, targetHandle, edgeType }
 ```
 
-`edgeType`: `"default"` (arrow) or `"plain"` (no marker). Handles are `"top" | "left" | "bottom" | "right"` or `null`.
+`edgeType`: `"default"` (arrow) or `"plain"` (no marker). Handles are `"top" | "left" | "bottom" | "right"` or `null`. Any side can connect to any side.
 
 ## Hierarchy rule
 

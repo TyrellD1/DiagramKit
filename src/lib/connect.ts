@@ -1,6 +1,8 @@
 export const HANDLE_SIDES = ['top', 'right', 'bottom', 'left'] as const
 export type HandleSide = (typeof HANDLE_SIDES)[number]
 
+const TARGET_PREFIX = 't-'
+
 type Box = {
   position: { x: number; y: number }
   measured?: { width?: number; height?: number }
@@ -24,7 +26,19 @@ export function isHandleSide(value: string | null | undefined): value is HandleS
   return value === 'top' || value === 'right' || value === 'bottom' || value === 'left'
 }
 
-/** Pick opposite sides so the edge lands on the facing edges of two cards. */
+/** Target handles need a distinct RF id from sources on the same side. */
+export function targetHandleId(side: HandleSide): string {
+  return `${TARGET_PREFIX}${side}`
+}
+
+/** Strip the target prefix so stored JSON stays `top` | `right` | `bottom` | `left`. */
+export function parseHandleId(value: string | null | undefined): HandleSide | null {
+  if (!value) return null
+  const side = value.startsWith(TARGET_PREFIX) ? value.slice(TARGET_PREFIX.length) : value
+  return isHandleSide(side) ? side : null
+}
+
+/** Facing sides, used only when a drop did not hit a specific handle. */
 export function pickHandles(from: Box, to: Box): { sourceHandle: HandleSide; targetHandle: HandleSide } {
   const a = center(from)
   const b = center(to)
@@ -40,16 +54,33 @@ export function pickHandles(from: Box, to: Box): { sourceHandle: HandleSide; tar
     : { sourceHandle: 'top', targetHandle: 'bottom' }
 }
 
+type DragConnection = {
+  source: string
+  target: string
+  sourceHandle?: string | null
+  targetHandle?: string | null
+}
+
 /**
  * React Flow's onConnect `source`/`target` follow handle types, not drag
- * direction. Keep the node the user dragged from as the edge source.
+ * direction. Keep the node (and handle) the user dragged from as the edge source.
  */
 export function sourceTargetForDrag(
   fromNodeId: string,
-  connection: { source: string; target: string },
-): { source: string; target: string } {
-  const { source, target } = connection
-  if (source === fromNodeId) return { source, target }
-  if (target === fromNodeId) return { source: target, target: source }
-  return { source, target }
+  connection: DragConnection,
+): { source: string; target: string; sourceHandle: string | null; targetHandle: string | null } {
+  const sourceHandle = connection.sourceHandle ?? null
+  const targetHandle = connection.targetHandle ?? null
+  if (connection.source === fromNodeId) {
+    return { source: connection.source, target: connection.target, sourceHandle, targetHandle }
+  }
+  if (connection.target === fromNodeId) {
+    return {
+      source: connection.target,
+      target: connection.source,
+      sourceHandle: targetHandle,
+      targetHandle: sourceHandle,
+    }
+  }
+  return { source: connection.source, target: connection.target, sourceHandle, targetHandle }
 }

@@ -1,9 +1,24 @@
 import { describe, expect, test } from 'vitest'
-import { pickHandles, sourceTargetForDrag } from './connect'
+import {
+  parseHandleId,
+  pickHandles,
+  sourceTargetForDrag,
+  targetHandleId,
+} from './connect'
 
 function box(x: number, y: number, w = 180, h = 80) {
   return { position: { x, y }, width: w, height: h }
 }
+
+describe('parseHandleId', () => {
+  test('reads a side id', () => {
+    expect(parseHandleId('top')).toBe('top')
+  })
+
+  test('strips the target prefix', () => {
+    expect(parseHandleId(targetHandleId('right'))).toBe('right')
+  })
+})
 
 describe('pickHandles', () => {
   test('connects right to left when the target is to the right', () => {
@@ -36,17 +51,31 @@ describe('pickHandles', () => {
 })
 
 describe('sourceTargetForDrag', () => {
-  test('keeps React Flow order when it already matches the drag', () => {
-    expect(sourceTargetForDrag('no', { source: 'no', target: 'hitl' })).toEqual({
-      source: 'no',
-      target: 'hitl',
+  test('keeps React Flow order and handles when they already match the drag', () => {
+    expect(sourceTargetForDrag('hitl', {
+      source: 'hitl',
+      target: 'can',
+      sourceHandle: 'top',
+      targetHandle: 't-right',
+    })).toEqual({
+      source: 'hitl',
+      target: 'can',
+      sourceHandle: 'top',
+      targetHandle: 't-right',
     })
   })
 
-  test('unswaps when handle types flipped the connection', () => {
-    expect(sourceTargetForDrag('no', { source: 'hitl', target: 'no' })).toEqual({
-      source: 'no',
+  test('unswaps nodes and handles when handle types flipped the connection', () => {
+    expect(sourceTargetForDrag('hitl', {
+      source: 'can',
       target: 'hitl',
+      sourceHandle: 'left',
+      targetHandle: 'top',
+    })).toEqual({
+      source: 'hitl',
+      target: 'can',
+      sourceHandle: 'top',
+      targetHandle: 'left',
     })
   })
 })

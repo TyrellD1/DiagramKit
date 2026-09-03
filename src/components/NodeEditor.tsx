@@ -1,15 +1,25 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import BoardAutocomplete from './BoardAutocomplete'
 import { Button, Field, Kbd, SectionLabel, Select, TextArea, TextInput } from './ui/controls'
-import { CloseIcon, FolderIcon, GlobeIcon, LayersIcon, PlusIcon, TerminalIcon, TrashIcon, ArrowRightIcon } from './ui/icons'
+import { CloseIcon, FolderIcon, GlobeIcon, LayersIcon, PlusIcon, TerminalIcon, TrashIcon, ArrowRightIcon, BorderSolidIcon, BorderDashedIcon, BorderNoneIcon } from './ui/icons'
 import { cn } from '@/lib/cn'
-import type { BoardNode, ChildLink, ChildLinkType, AtreidesNodeData, ReferenceLink, LinkType } from '@/types'
+import type { BoardNode, ChildLink, ChildLinkType, AtreidesNodeData, ReferenceLink, LinkType, CardColor, CardBorderStyle } from '@/types'
+import {
+  CARD_BORDER_LABEL,
+  CARD_BORDER_STYLES,
+  CARD_COLOR_LABEL,
+  CARD_COLORS,
+  CARD_EDGE_CLASS,
+  CARD_FILL_CLASS,
+  normalizeCardBorderStyle,
+  normalizeCardColor,
+} from '@/lib/cardStyle'
 
 interface Props {
   nodeId: string
   nodeData: AtreidesNodeData
   onClose: () => void
-  onUpdate: (patch: Partial<Pick<BoardNode, 'title' | 'description' | 'childLink'>>) => void
+  onUpdate: (patch: Partial<Pick<BoardNode, 'title' | 'description' | 'childLink' | 'color' | 'borderStyle'>>) => void
   onDelete: () => void
   onAddRef: (ref: ReferenceLink) => void
   onDeleteRef: (refId: string) => void
@@ -71,6 +81,12 @@ const typeLabel: Record<LinkType, string> = {
   board: 'Board',
 }
 
+const borderIcon: Record<CardBorderStyle, ReactNode> = {
+  solid: <BorderSolidIcon size={14} />,
+  dashed: <BorderDashedIcon size={14} />,
+  none: <BorderNoneIcon size={14} />,
+}
+
 type SaveStatus = 'idle' | 'pending' | 'saved'
 
 export default function NodeEditor({
@@ -94,6 +110,8 @@ export default function NodeEditor({
 
   const [title, setTitle] = useState(nodeData.title)
   const [description, setDescription] = useState(nodeData.description ?? '')
+  const [color, setColor] = useState<CardColor>(() => normalizeCardColor(nodeData.color))
+  const [borderStyle, setBorderStyle] = useState<CardBorderStyle>(() => normalizeCardBorderStyle(nodeData.borderStyle))
   const [linkType, setLinkType] = useState<ChildLinkType | 'none'>(() => getChildLinkType(nodeData.childLink))
   const [linkValue, setLinkValue] = useState(() => getChildLinkValue(nodeData.childLink))
   const [status, setStatus] = useState<SaveStatus>('idle')
@@ -110,6 +128,8 @@ export default function NodeEditor({
   useEffect(() => {
     setTitle(nodeData.title)
     setDescription(nodeData.description ?? '')
+    setColor(normalizeCardColor(nodeData.color))
+    setBorderStyle(normalizeCardBorderStyle(nodeData.borderStyle))
     setLinkType(getChildLinkType(nodeData.childLink))
     setLinkValue(getChildLinkValue(nodeData.childLink))
     setAddingRef(false)
@@ -127,6 +147,8 @@ export default function NodeEditor({
       title: title.trim() || 'Untitled',
       description: description || null,
       childLink: buildChildLink(linkType, linkValue),
+      color,
+      borderStyle,
     })
     dirtyRef.current = false
   }
@@ -142,7 +164,7 @@ export default function NodeEditor({
       setStatus('saved')
     }, 500)
     return () => clearTimeout(t)
-  }, [title, description, linkType, linkValue])
+  }, [title, description, linkType, linkValue, color, borderStyle])
 
   useEffect(() => {
     if (status !== 'saved') return
@@ -247,6 +269,65 @@ export default function NodeEditor({
             />
           </Field>
         </div>
+
+        <section className="flex flex-col gap-3">
+          <SectionLabel>Appearance</SectionLabel>
+          <Field label="Background">
+            <div className="flex items-center gap-2" role="radiogroup" aria-label="Card background">
+              {CARD_COLORS.map(value => {
+                const selected = color === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={CARD_COLOR_LABEL[value]}
+                    title={CARD_COLOR_LABEL[value]}
+                    className={cn(
+                      'h-8 w-8 rounded-md border cursor-pointer transition-[box-shadow,border-color] duration-150',
+                      CARD_FILL_CLASS[value],
+                      value === 'default' ? 'border-border' : CARD_EDGE_CLASS[value],
+                      selected
+                        ? 'shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--accent)]'
+                        : 'hover:border-strong',
+                    )}
+                    onClick={() => edit(setColor)(value)}
+                  />
+                )
+              })}
+            </div>
+          </Field>
+          <Field label="Border">
+            <div
+              className="flex gap-0.5 rounded-md border border-border bg-field p-0.5"
+              role="radiogroup"
+              aria-label="Card border"
+            >
+              {CARD_BORDER_STYLES.map(value => {
+                const selected = borderStyle === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    title={CARD_BORDER_LABEL[value]}
+                    className={cn(
+                      'flex h-7 flex-1 items-center justify-center gap-1.5 rounded text-2xs font-medium cursor-pointer border-none',
+                      'transition-colors duration-150',
+                      selected ? 'bg-surface text-text shadow-card' : 'bg-transparent text-muted hover:text-text',
+                    )}
+                    onClick={() => edit(setBorderStyle)(value)}
+                  >
+                    <span className={selected ? 'text-text' : 'text-faint'}>{borderIcon[value]}</span>
+                    {CARD_BORDER_LABEL[value]}
+                  </button>
+                )
+              })}
+            </div>
+          </Field>
+        </section>
 
         <section className="flex flex-col gap-3">
           <SectionLabel>Primary action</SectionLabel>

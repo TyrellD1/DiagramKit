@@ -32,9 +32,10 @@ import { useBoardNavigation } from '@/hooks/useBoardNavigation'
 import { useNodeActions } from '@/hooks/useNodeActions'
 import { useTheme } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
-import { pickHandles, sourceTargetForDrag } from '@/lib/connect'
+import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
+import { activeWorkspaceId } from '@/lib/route'
 import { cn } from '@/lib/cn'
-import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceList } from '@/types'
+import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceIndex, WorkspaceList } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
 
 const nodeTypes = { atreides: AtreidesNode }
@@ -50,16 +51,16 @@ function refLinkToAction(ref: ReferenceLink): ChildLink | null {
 }
 
 interface Props {
-  rootBoardId: string
-  rootBoardTitle: string
+  boards: WorkspaceIndex
   workspaces: WorkspaceList
   onWorkspacesChange: (next: WorkspaceList) => void
 }
 
-export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, onWorkspacesChange }: Props) {
+export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: Props) {
   const colors = useThemeColors()
   const { theme } = useTheme()
-  const { currentBoardId, boardStack, initWithRootBoard, pushBoard, popToIndex } = useBoardNavigation()
+  const workspaceId = activeWorkspaceId(workspaces)
+  const { currentBoardId, boardStack, pushBoard, popToIndex } = useBoardNavigation(workspaceId, boards)
   const {
     flowNodes,
     flowEdges,
@@ -80,7 +81,7 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
   const { executeAction } = useNodeActions({ pushBoard, notify })
   const [nodes, setNodes, handleNodesChange] = useNodesState<Node<AtreidesNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-  const connectFromId = useRef<string | null>(null)
+  const connectFrom = useRef<{ nodeId: string; handleId: string | null } | null>(null)
 
   const onNodesChange: OnNodesChange<Node<AtreidesNodeData>> = useCallback(
     (changes) => {
@@ -107,10 +108,6 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
   const interactionProps = interactionMode === 'edit'
     ? { panOnDrag: [1, 2] as number[], zoomOnDoubleClick: false, panOnScroll: true }
     : { panOnDrag: true as const, zoomOnDoubleClick: false, panOnScroll: false }
-
-  useEffect(() => {
-    initWithRootBoard(rootBoardId, rootBoardTitle)
-  }, [rootBoardId, rootBoardTitle, initWithRootBoard])
 
   const handleChildLinkClick = useCallback((data: AtreidesNodeData) => {
     if (data.hasLink && data.linkedBoardId) {
@@ -151,7 +148,7 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
   }, [currentBoardId])
 
   const connectNodes = useCallback(
-    (fromId: string, toId: string) => {
+    (fromId: string, toId: string, fromHandle?: string | null, toHandle?: string | null) => {
       if (!fromId || !toId || fromId === toId) return
       const from = nodes.find(n => n.id === fromId)
       const to = nodes.find(n => n.id === toId)
@@ -162,8 +159,8 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
         id: crypto.randomUUID(),
         source: fromId,
         target: toId,
-        sourceHandle: geo.sourceHandle,
-        targetHandle: geo.targetHandle,
+        sourceHandle: parseHandleId(fromHandle) ?? geo.sourceHandle,
+        targetHandle: parseHandleId(toHandle) ?? geo.targetHandle,
         edgeType: 'default',
       })
     },
@@ -171,23 +168,27 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
   )
 
   const onConnectStart: OnConnectStart = useCallback((_event, params) => {
-    connectFromId.current = params.nodeId ?? null
+    connectFrom.current = params.nodeId
+      ? { nodeId: params.nodeId, handleId: params.handleId ?? null }
+      : null
   }, [])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
-      const fromId = connectFromId.current ?? params.source
-      const { source, target } = sourceTargetForDrag(fromId, params)
-      connectNodes(source, target)
-      connectFromId.current = null
+      const fromId = connectFrom.current?.nodeId ?? params.source
+      const startedHandle = connectFrom.current?.handleId
+      const { source, target, sourceHandle, targetHandle } = sourceTargetForDrag(fromId, params)
+      connectNodes(source, target, startedHandle ?? sourceHandle, targetHandle)
+      connectFrom.current = null
     },
     [connectNodes],
   )
 
   const onConnectEnd: OnConnectEnd = useCallback(
     (event, state) => {
-      const fromId = connectFromId.current ?? state.fromNode?.id
-      connectFromId.current = null
+      const fromId = connectFrom.current?.nodeId ?? state.fromNode?.id
+      const fromHandle = connectFrom.current?.handleId ?? state.fromHandle?.id ?? null
+      connectFrom.current = null
       if (state.isValid) return
       if (!fromId) return
 
@@ -196,16 +197,20 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
         : event as MouseEvent
       const stack = document.elementsFromPoint(point.clientX, point.clientY)
       let targetId: string | null = null
+      let toHandle: string | null = null
       for (const el of stack) {
-        const nodeEl = el instanceof Element ? el.closest('.react-flow__node') : null
+        if (!(el instanceof Element)) continue
+        const handleEl = el.closest('.react-flow__handle')
+        const nodeEl = (handleEl ?? el).closest('.react-flow__node')
         const id = nodeEl?.getAttribute('data-id')
         if (id && id !== fromId) {
           targetId = id
+          toHandle = handleEl?.getAttribute('data-handleid') ?? null
           break
         }
       }
       if (!targetId) return
-      connectNodes(fromId, targetId)
+      connectNodes(fromId, targetId, fromHandle, toHandle)
     },
     [connectNodes],
   )
@@ -328,7 +333,7 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
         onConnect={onConnect}
         onConnectEnd={onConnectEnd}
         connectionMode={ConnectionMode.Loose}
-        connectionRadius={80}
+        connectionRadius={24}
         onEdgeClick={onEdgeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeClick={onNodeClick}
@@ -411,6 +416,8 @@ export default function BoardCanvas({ rootBoardId, rootBoardTitle, workspaces, o
               enterBoardId: null,
               childLink: null,
               refs: [],
+              color: 'default',
+              borderStyle: 'solid',
             })
           }}
         />

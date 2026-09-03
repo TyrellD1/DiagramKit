@@ -136,3 +136,18 @@ export const GlobeIcon = (p: IconProps) => (
     <path d="M2.5 8h11M8 2.5c1.8 1.8 2.5 3.6 2.5 5.5S9.8 11.7 8 13.5M8 2.5C6.2 4.3 5.5 6.1 5.5 8s.7 3.7 2.5 5.5" />
   </svg>
 )
+
+export const BorderSolidIcon = (p: IconProps) => (
+  <svg {...base(p)}><rect x="2.5" y="4" width="11" height="8" rx="1.5" /></svg>
+)
+
+export const BorderDashedIcon = (p: IconProps) => (
+  <svg {...base({ ...p, strokeDasharray: '2.4 1.8' })}><rect x="2.5" y="4" width="11" height="8" rx="1.5" /></svg>
+)
+
+export const BorderNoneIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="2.5" y="4" width="11" height="8" rx="1.5" opacity="0.35" />
+    <path d="M4 12L12 4" opacity="0.55" />
+  </svg>
+)

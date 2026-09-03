@@ -40,7 +40,7 @@ diagramkit validate ~/.diagram-kit-local1
 diagramkit workspaces
 ```
 
-`open` validates first, attaches the folder (adds it to `~/.diagramkit/workspaces.json` if missing), switches it active, and starts the server if nothing is listening. If the path does not exist it exits 2 and tells you to `create`. If the JSON is invalid it prints file + JSON path + message and does not attach.
+`open` validates first, attaches the folder (adds it to `~/.diagramkit/workspaces.json` if missing), switches it active, and starts the server if nothing is listening. If the path does not exist it exits 2 and tells you to `create`. If the JSON is invalid it prints file + JSON path + message and does not attach. `validate` does not run `migrations/`; the server migrates boards on read/write. See `AGENTS.md`.
 
 `create` only scaffolds `index.json` + `boards/` + Home. It does not attach. It refuses to overwrite an existing workspace.
 

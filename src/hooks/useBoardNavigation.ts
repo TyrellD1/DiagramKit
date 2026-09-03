@@ -1,52 +1,72 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
+import type { WorkspaceIndex } from '@/types'
+import { advanceStack, boardPath, type BoardStackEntry } from '@/lib/boardPath'
+import { readAppRoute, resolveBoardId, writeAppRoute } from '@/lib/route'
 
-export interface BoardStackEntry {
-  boardId: string
-  boardTitle: string
-  viewport: { x: number; y: number; zoom: number }
-}
+export type { BoardStackEntry }
 
-export function useBoardNavigation() {
-  const [boardStack, setBoardStack] = useState<BoardStackEntry[]>([])
-  const [currentBoardId, setCurrentBoardId] = useState<string | null>(null)
+const ZERO = { x: 0, y: 0, zoom: 1 }
+
+export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) {
+  const startId = resolveBoardId(boards, readAppRoute().boardId)
+  const [currentBoardId, setCurrentBoardId] = useState(startId)
+  const [boardStack, setBoardStack] = useState(() => boardPath(boards, startId))
+  const currentRef = useRef(startId)
+  const boardsRef = useRef(boards)
+  const workspaceRef = useRef(workspaceId)
+  const viewports = useRef(new Map<string, { x: number; y: number; zoom: number }>())
   const { getViewport, setViewport } = useReactFlow()
 
-  const initWithRootBoard = useCallback((rootBoardId: string, rootTitle: string) => {
-    setCurrentBoardId(rootBoardId)
-    setBoardStack([{ boardId: rootBoardId, boardTitle: rootTitle, viewport: { x: 0, y: 0, zoom: 1 } }])
-  }, [])
+  boardsRef.current = boards
+  workspaceRef.current = workspaceId
 
-  const pushBoard = useCallback((boardId: string, boardTitle?: string) => {
-    const currentViewport = getViewport()
-    setBoardStack(prev => {
-      const updated = [...prev]
-      if (updated.length > 0) {
-        updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          viewport: currentViewport,
-        }
+  const goToBoard = useCallback((
+    boardId: string,
+    opts?: { title?: string; history?: 'push' | 'replace' | false },
+  ) => {
+    const index = boardsRef.current
+    const resolved = resolveBoardId(index, boardId)
+    const history = opts?.history ?? 'push'
+    const from = currentRef.current
+
+    if (resolved !== from) {
+      viewports.current.set(from, getViewport())
+      currentRef.current = resolved
+      setCurrentBoardId(resolved)
+      setBoardStack(prev => advanceStack(prev, index, resolved, opts?.title))
+      setViewport(viewports.current.get(resolved) ?? ZERO, { duration: 300 })
+    }
+
+    if (history) {
+      const current = readAppRoute()
+      if (current.workspaceId !== workspaceRef.current || current.boardId !== resolved) {
+        writeAppRoute({ workspaceId: workspaceRef.current, boardId: resolved }, history)
       }
-      return [...updated, { boardId, boardTitle: boardTitle ?? 'Board', viewport: { x: 0, y: 0, zoom: 1 } }]
-    })
-    setCurrentBoardId(boardId)
-    setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 300 })
+    }
   }, [getViewport, setViewport])
 
+  useEffect(() => {
+    const onPop = () => {
+      const wanted = readAppRoute().boardId
+      goToBoard(wanted ?? boardsRef.current.rootBoardId, { history: false })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [goToBoard])
+
+  const pushBoard = useCallback((boardId: string, boardTitle?: string) => {
+    goToBoard(boardId, { title: boardTitle, history: 'push' })
+  }, [goToBoard])
+
   const popToIndex = useCallback((index: number) => {
-    setBoardStack(prev => {
-      const sliced = prev.slice(0, index + 1)
-      const target = sliced[sliced.length - 1]
-      setCurrentBoardId(target.boardId)
-      setViewport(target.viewport, { duration: 300 })
-      return sliced
-    })
-  }, [setViewport])
+    const target = boardStack[index]
+    if (target) goToBoard(target.boardId, { title: target.boardTitle, history: 'push' })
+  }, [boardStack, goToBoard])
 
   return {
     currentBoardId,
     boardStack,
-    initWithRootBoard,
     pushBoard,
     popToIndex,
   }

@@ -9,6 +9,8 @@ import type {
   WorkspaceList,
   WorkspaceRecord,
 } from '../src/types.ts'
+import { applyMigrations, currentSchemaVersion } from '../migrations/run.ts'
+import type { JsonObject } from '../migrations/types.ts'
 
 interface WorkspaceRegistry {
   activePath: string
@@ -82,7 +84,12 @@ async function readJson<T>(file: string): Promise<T> {
 }
 
 function emptyBoard(id: string, title: string): BoardDocument {
-  return { id, title, nodes: [], edges: [] }
+  return { schemaVersion: currentSchemaVersion(), id, title, nodes: [], edges: [] }
+}
+
+async function migrateBoard(raw: unknown): Promise<{ board: BoardDocument; changed: boolean }> {
+  const result = await applyMigrations(raw)
+  return { board: result.document as BoardDocument, changed: result.changed }
 }
 
 function defaultRecord(): WorkspaceRecord {
@@ -321,7 +328,10 @@ export async function detachWorkspace(id: string): Promise<WorkspaceList> {
 export async function readBoard(id: string): Promise<BoardDocument> {
   await ensureSeed()
   try {
-    return await readJson<BoardDocument>(boardPath(id))
+    const raw = await readJson<JsonObject>(boardPath(id))
+    const { board, changed } = await migrateBoard(raw)
+    if (changed) await writeJsonAtomic(boardPath(id), board)
+    return board
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') fail('Board not found', 404)
     throw err
@@ -334,12 +344,13 @@ export async function saveBoard(board: BoardDocument): Promise<BoardDocument> {
   const known = index.boards.some(b => b.id === board.id)
   if (!known) fail('Board not found', 404)
 
-  await writeJsonAtomic(boardPath(board.id), board)
+  const { board: next } = await migrateBoard(board)
+  await writeJsonAtomic(boardPath(next.id), next)
   index.boards = index.boards.map(b =>
-    b.id === board.id ? { id: b.id, title: board.title } : b,
+    b.id === next.id ? { id: b.id, title: next.title } : b,
   )
   await writeIndex(index)
-  return board
+  return next
 }
 
 export async function createBoard(title: string): Promise<BoardDocument> {

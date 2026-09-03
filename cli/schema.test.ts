@@ -13,7 +13,7 @@ const homeId = '11111111-1111-4111-8111-111111111111'
 const childId = '22222222-2222-4222-8222-222222222222'
 
 function emptyBoard(id: string, title: string) {
-  return { id, title, nodes: [], edges: [] }
+  return { schemaVersion: 1, id, title, nodes: [], edges: [] }
 }
 
 function validIndex() {
@@ -28,6 +28,7 @@ function validIndex() {
 
 function homeBoard() {
   return {
+    schemaVersion: 1,
     id: homeId,
     title: 'Home',
     nodes: [
@@ -68,6 +69,22 @@ describe('validateWorkspace', () => {
     expect(result.issues).toEqual([])
   })
 
+  test('accepts a legacy board with no schemaVersion', async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'dk-legacy-'))
+    await writeJson(path.join(dir, 'index.json'), {
+      rootBoardId: homeId,
+      boards: [{ id: homeId, title: 'Home' }],
+    })
+    await writeJson(path.join(dir, 'boards', `${homeId}.json`), {
+      id: homeId,
+      title: 'Home',
+      nodes: [],
+      edges: [],
+    })
+    const result = await validateWorkspace(dir)
+    expect(result.ok).toBe(true)
+  })
+
   test('reports missing index.json', async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), 'dk-empty-'))
     const result = await validateWorkspace(dir)
@@ -96,7 +113,7 @@ describe('validateWorkspace', () => {
           enterBoardId: 'missing-board',
           childLink: { type: 'url', value: 'https://x.com', nope: 1 },
           refs: [],
-          color: 'red',
+          flavour: 'red',
         },
       ],
       edges: [
@@ -116,7 +133,7 @@ describe('validateWorkspace', () => {
     expect(result.ok).toBe(false)
     const messages = result.issues.map(i => `${i.file} ${i.path} ${i.message}`)
     expect(messages.some(m => m.includes('unknown key "extra"'))).toBe(true)
-    expect(messages.some(m => m.includes('unknown key "color"'))).toBe(true)
+    expect(messages.some(m => m.includes('unknown key "flavour"'))).toBe(true)
     expect(messages.some(m => m.includes('unknown key "nope"'))).toBe(true)
     expect(messages.some(m => m.includes('missing-board'))).toBe(true)
     expect(messages.some(m => m.includes('nobody'))).toBe(true)
@@ -132,5 +149,64 @@ describe('validateWorkspace', () => {
     expect(result.ok).toBe(false)
     expect(result.issues[0]?.file).toBe('index.json')
     expect(result.issues[0]?.message).toMatch(/invalid JSON/)
+  })
+
+  test('accepts pastel color and borderStyle on a node', async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'dk-style-'))
+    await writeJson(path.join(dir, 'index.json'), {
+      rootBoardId: homeId,
+      boards: [{ id: homeId, title: 'Home' }],
+    })
+    await writeJson(path.join(dir, 'boards', `${homeId}.json`), {
+      schemaVersion: 2,
+      id: homeId,
+      title: 'Home',
+      nodes: [{
+        id: 'node-1',
+        title: 'A',
+        description: null,
+        x: 0,
+        y: 0,
+        enterBoardId: null,
+        childLink: null,
+        refs: [],
+        color: 'red',
+        borderStyle: 'dashed',
+      }],
+      edges: [],
+    })
+    const result = await validateWorkspace(dir)
+    expect(result.ok).toBe(true)
+  })
+
+  test('rejects invalid color and borderStyle', async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'dk-style-bad-'))
+    await writeJson(path.join(dir, 'index.json'), {
+      rootBoardId: homeId,
+      boards: [{ id: homeId, title: 'Home' }],
+    })
+    await writeJson(path.join(dir, 'boards', `${homeId}.json`), {
+      schemaVersion: 2,
+      id: homeId,
+      title: 'Home',
+      nodes: [{
+        id: 'node-1',
+        title: 'A',
+        description: null,
+        x: 0,
+        y: 0,
+        enterBoardId: null,
+        childLink: null,
+        refs: [],
+        color: 'purple',
+        borderStyle: 'dotted',
+      }],
+      edges: [],
+    })
+    const result = await validateWorkspace(dir)
+    expect(result.ok).toBe(false)
+    const messages = result.issues.map(i => i.message)
+    expect(messages.some(m => m.includes('red'))).toBe(true)
+    expect(messages.some(m => m.includes('dashed'))).toBe(true)
   })
 })

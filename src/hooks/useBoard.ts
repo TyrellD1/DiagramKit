@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MarkerType, type Node, type Edge } from '@xyflow/react'
 import { api } from '@/lib/api'
+import { targetHandleId, parseHandleId } from '@/lib/connect'
 import type { AtreidesNodeData, BoardDocument, BoardNode, ReferenceLink } from '@/types'
+import { normalizeCardBorderStyle, normalizeCardColor } from '@/lib/cardStyle'
 
 function toFlowNodes(board: BoardDocument): Node<AtreidesNodeData>[] {
   return board.nodes.map(n => ({
@@ -16,22 +18,27 @@ function toFlowNodes(board: BoardDocument): Node<AtreidesNodeData>[] {
       hasLink: !!n.enterBoardId,
       linkedBoardId: n.enterBoardId,
       dbId: n.id,
+      color: normalizeCardColor(n.color),
+      borderStyle: normalizeCardBorderStyle(n.borderStyle),
     },
   }))
 }
 
 function toFlowEdges(board: BoardDocument): Edge[] {
-  return board.edges.map(e => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    sourceHandle: e.sourceHandle ?? undefined,
-    targetHandle: e.targetHandle ?? undefined,
-    ...(e.edgeType !== 'plain' ? {
-      markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--edge)', width: 18, height: 18 },
-    } : {}),
-    data: { dbEdgeType: e.edgeType },
-  }))
+  return board.edges.map(e => {
+    const targetSide = parseHandleId(e.targetHandle)
+    return {
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? undefined,
+      targetHandle: targetSide ? targetHandleId(targetSide) : undefined,
+      ...(e.edgeType !== 'plain' ? {
+        markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--edge)', width: 18, height: 18 },
+      } : {}),
+      data: { dbEdgeType: e.edgeType },
+    }
+  })
 }
 
 export function useBoard(boardId: string | null) {

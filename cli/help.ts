@@ -124,7 +124,8 @@ Examples:
 const VALIDATE = `diagramkit validate <path> [options]
 
 Check every index.json and boards/<id>.json file against the schema.
-Prints file + JSON path + message for each problem.
+Prints file + JSON path + message for each problem. Does not migrate;
+missing schemaVersion is still valid (legacy version 0).
 
 Options:
       --json           Print JSON { ok, path, boardCount, issues }

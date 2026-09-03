@@ -1,5 +1,8 @@
+import type { CardBorderStyle, CardColor } from './lib/cardStyle'
+
 export type LinkType = 'url' | 'cursor' | 'open' | 'board'
 export type ChildLinkType = LinkType
+export type { CardBorderStyle, CardColor }
 
 export type ChildLink =
   | { type: 'url'; value: string }
@@ -23,6 +26,8 @@ export interface BoardNode {
   enterBoardId: string | null
   childLink: ChildLink | null
   refs: ReferenceLink[]
+  color: CardColor
+  borderStyle: CardBorderStyle
 }
 
 export interface BoardEdge {
@@ -35,6 +40,7 @@ export interface BoardEdge {
 }
 
 export interface BoardDocument {
+  schemaVersion: number
   id: string
   title: string
   nodes: BoardNode[]
@@ -81,6 +87,8 @@ export interface AtreidesNodeData {
   hasLink: boolean
   linkedBoardId: string | null
   dbId: string
+  color: CardColor
+  borderStyle: CardBorderStyle
   onChildLinkClick?: () => void
   onRefLinkClick?: (ref: ReferenceLink) => void
   [key: string]: unknown

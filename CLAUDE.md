@@ -10,7 +10,7 @@
 
 - **Frontend**: React + TypeScript, Vite, Tailwind CSS, @xyflow/react
 - **Backend**: Hono on Node (`server/index.ts`)
-- **Data**: one JSON file per board in the **active workspace** (`index.json` + `boards/<id>.json`). Default workspace is `~/.diagramkit`. Writes are temp-file then rename. App home (workspace registry) is `~/.diagramkit/workspaces.json`. Override app home with `DIAGRAMKIT_HOME`.
+- **Data**: one JSON file per board in the **active workspace** (`index.json` + `boards/<id>.json`). Default workspace is `~/.diagramkit`. Writes are temp-file then rename. App home (workspace registry) is `~/.diagramkit/workspaces.json`. Override app home with `DIAGRAMKIT_HOME`. Board schema versions live in `migrations/NNN_slug.ts`; the server migrates on read/write. See `AGENTS.md`.
 
 ## Data
 
