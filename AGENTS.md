@@ -4,6 +4,10 @@ Setup (CLI install and skills): [AGENTS_README.md](AGENTS_README.md).
 
 Prefer the CLI (`diagramkit`) for create / open / validate / serve. Skill: `agent-skills/diagramkit-cli`. Always pass `--no-browser`. Isolate tests with `DIAGRAMKIT_HOME` when the command would touch the registry.
 
+## Git
+
+Commit often, as each coherent unit of work lands — not a pile at the end of a session. At the end of every turn, commit any remaining work and push. Do not wait to be asked. Do not force-push or skip hooks unless the user explicitly says to.
+
 ## User data is off limits
 
 The human's real boards live in:
