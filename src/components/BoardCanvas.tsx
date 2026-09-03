@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import {
   ReactFlow,
   Background,
   ConnectionMode,
   useNodesState,
   useEdgesState,
+  useNodesInitialized,
+  useReactFlow,
   type OnConnect,
   type OnConnectStart,
   type OnConnectEnd,
@@ -20,7 +22,7 @@ import AtreidesNode from './AtreidesNode'
 import BoardBreadcrumbs from './BoardBreadcrumbs'
 import BoardSidebar, { SIDEBAR_WIDTH, readSidebarOpen } from './BoardSidebar'
 import BoardMiniMap from './BoardMiniMap'
-import CanvasToolbar, { type InteractionMode } from './CanvasToolbar'
+import CanvasToolbar, { FIT_VIEW_OPTIONS, type InteractionMode } from './CanvasToolbar'
 import NodeEditor from './NodeEditor'
 import CreateNodeDialog from './CreateNodeDialog'
 import EdgeContextMenu from './EdgeContextMenu'
@@ -39,6 +41,21 @@ import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceIndex, Worksp
 import type { Node, Edge } from '@xyflow/react'
 
 const nodeTypes = { atreides: AtreidesNode }
+
+function FitViewOnBoard({ boardId }: { boardId: string }) {
+  const initialized = useNodesInitialized()
+  const { fitView } = useReactFlow()
+  const fittedFor = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!initialized) return
+    if (fittedFor.current === boardId) return
+    fittedFor.current = boardId
+    void fitView(FIT_VIEW_OPTIONS)
+  }, [initialized, boardId, fitView])
+
+  return null
+}
 
 function refLinkToAction(ref: ReferenceLink): ChildLink | null {
   switch (ref.type) {
@@ -62,6 +79,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
   const workspaceId = activeWorkspaceId(workspaces)
   const { currentBoardId, boardStack, pushBoard, popToIndex } = useBoardNavigation(workspaceId, boards)
   const {
+    board,
     flowNodes,
     flowEdges,
     loading,
@@ -81,6 +99,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
   const { executeAction } = useNodeActions({ pushBoard, notify })
   const [nodes, setNodes, handleNodesChange] = useNodesState<Node<AtreidesNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const [shownBoardId, setShownBoardId] = useState<string | null>(null)
   const connectFrom = useRef<{ nodeId: string; handleId: string | null } | null>(null)
 
   const onNodesChange: OnNodesChange<Node<AtreidesNodeData>> = useCallback(
@@ -128,7 +147,11 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
     }
   }, [pushBoard, executeAction])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setShownBoardId(null)
+  }, [currentBoardId])
+
+  useLayoutEffect(() => {
     const enriched = flowNodes.map(node => ({
       ...node,
       data: {
@@ -139,7 +162,10 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
     }))
     setNodes(enriched)
     setEdges(flowEdges)
-  }, [flowNodes, flowEdges, setNodes, setEdges, handleChildLinkClick, handleRefLinkClick])
+    if (!loading && board?.id === currentBoardId) {
+      setShownBoardId(currentBoardId)
+    }
+  }, [flowNodes, flowEdges, setNodes, setEdges, handleChildLinkClick, handleRefLinkClick, loading, board, currentBoardId])
 
   useEffect(() => {
     setSelectedNodeId(null)
@@ -282,14 +308,6 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
     pushBoard(boardId, title)
   }, [pushBoard])
 
-  if (loading) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-canvas text-sm text-faint">
-        <span className="animate-fade">Loading board</span>
-      </div>
-    )
-  }
-
   if (error) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-canvas">
@@ -297,6 +315,14 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
           <p className="m-0 font-medium">Could not load this board</p>
           <p className="m-0 mt-1 text-xs text-muted">{error}</p>
         </div>
+      </div>
+    )
+  }
+
+  if (loading || shownBoardId !== currentBoardId) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-canvas text-sm text-faint">
+        <span className="animate-fade">Loading board</span>
       </div>
     )
   }
@@ -323,6 +349,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
       )}
 
       <ReactFlow
+        key={currentBoardId}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -340,8 +367,6 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
         onDoubleClick={onPaneDoubleClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.25, maxZoom: 1 }}
         snapToGrid
         snapGrid={[20, 20]}
         colorMode={theme}
@@ -351,6 +376,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
         <Background gap={20} size={1} color={colors.grid} bgColor={colors.canvas} />
         <BoardMiniMap colors={colors} />
         <CanvasToolbar mode={interactionMode} onModeChange={setInteractionMode} />
+        <FitViewOnBoard boardId={currentBoardId} />
       </ReactFlow>
 
       {isEmpty && !createDialogPos && (

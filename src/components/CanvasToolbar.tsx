@@ -6,6 +6,9 @@ import { cn } from '@/lib/cn'
 
 export type InteractionMode = 'edit' | 'navigate'
 
+/** Same options as the Fit to view button (Shift+1). */
+export const FIT_VIEW_OPTIONS = { duration: 250, padding: 0.2 } as const
+
 interface Props {
   mode: InteractionMode
   onModeChange: (mode: InteractionMode) => void
@@ -39,7 +42,7 @@ export default function CanvasToolbar({ mode, onModeChange }: Props) {
       if (e.key === 'h' || e.key === 'H') onModeChange('navigate')
       if (e.key === '1' && e.shiftKey) {
         e.preventDefault()
-        void fitView({ duration: 250, padding: 0.2 })
+        void fitView(FIT_VIEW_OPTIONS)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -94,7 +97,7 @@ export default function CanvasToolbar({ mode, onModeChange }: Props) {
               <path d="M8 3.5v9M3.5 8h9" />
             </svg>
           </button>
-          <button type="button" className={toolClass} onClick={() => void fitView({ duration: 250, padding: 0.2 })} title="Fit to view (Shift+1)" aria-label="Fit to view">
+          <button type="button" className={toolClass} onClick={() => void fitView(FIT_VIEW_OPTIONS)} title="Fit to view (Shift+1)" aria-label="Fit to view">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M2.5 6V3.5A1 1 0 013.5 2.5H6M10 2.5h2.5a1 1 0 011 1V6M13.5 10v2.5a1 1 0 01-1 1H10M6 13.5H3.5a1 1 0 01-1-1V10" />
             </svg>

@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useReactFlow } from '@xyflow/react'
 import type { WorkspaceIndex } from '@/types'
 import { advanceStack, boardPath, type BoardStackEntry } from '@/lib/boardPath'
 import { readAppRoute, resolveBoardId, writeAppRoute } from '@/lib/route'
 
 export type { BoardStackEntry }
-
-const ZERO = { x: 0, y: 0, zoom: 1 }
 
 export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) {
   const startId = resolveBoardId(boards, readAppRoute().boardId)
@@ -15,8 +12,6 @@ export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) 
   const currentRef = useRef(startId)
   const boardsRef = useRef(boards)
   const workspaceRef = useRef(workspaceId)
-  const viewports = useRef(new Map<string, { x: number; y: number; zoom: number }>())
-  const { getViewport, setViewport } = useReactFlow()
 
   boardsRef.current = boards
   workspaceRef.current = workspaceId
@@ -31,11 +26,9 @@ export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) 
     const from = currentRef.current
 
     if (resolved !== from) {
-      viewports.current.set(from, getViewport())
       currentRef.current = resolved
       setCurrentBoardId(resolved)
       setBoardStack(prev => advanceStack(prev, index, resolved, opts?.title))
-      setViewport(viewports.current.get(resolved) ?? ZERO, { duration: 300 })
     }
 
     if (history) {
@@ -44,7 +37,7 @@ export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) 
         writeAppRoute({ workspaceId: workspaceRef.current, boardId: resolved }, history)
       }
     }
-  }, [getViewport, setViewport])
+  }, [])
 
   useEffect(() => {
     const onPop = () => {
