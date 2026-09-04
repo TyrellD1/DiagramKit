@@ -42,6 +42,8 @@ mkdir -p "$BIN_DIR"
 
 echo "Installing npm dependencies in $ROOT"
 (cd "$ROOT" && npm install)
+echo "Installing Playwright Chromium (board PNG export)"
+(cd "$ROOT" && npx playwright install chromium)
 
 echo "Building the UI"
 (cd "$ROOT" && npm run build)

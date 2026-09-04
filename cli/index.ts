@@ -10,6 +10,9 @@ import { die, EXIT, formatIssues, hint } from './print.ts'
 import { repoRoot } from './root.ts'
 import { readVersion } from './version.ts'
 import { validateWorkspace } from './schema.ts'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { resolveBoardRef, zipBasename } from '../src/lib/exportTree.ts'
 import {
   apiUrl,
   DEFAULT_HOST,
@@ -213,6 +216,81 @@ async function cmdServe(flags: CliFlags) {
   if (opts.openBrowser) openInBrowser(state.url)
 }
 
+async function ensureApi(flags: CliFlags): Promise<string> {
+  const opts = serveOpts(flags)
+  const existing = await readRunState()
+  if (!existing) {
+    const already = await fetchHealth(apiUrl(opts)).catch(() => null)
+    if (!already?.ok) {
+      await startServe({ ...opts, foreground: false, openBrowser: false })
+      console.log('Started server')
+    }
+  }
+  const base = apiUrl(opts)
+  const health = await fetchHealth(base).catch(() => null)
+  if (!health?.ok) die('server is not reachable. Start it with: diagramkit serve', EXIT.notRunning)
+  return base
+}
+
+async function cmdExport(args: string[], flags: CliFlags) {
+  if (args.length > 1) die(`unexpected extra arguments: ${args.slice(1).join(' ')}`)
+  if (flags.theme && flags.theme !== 'light' && flags.theme !== 'dark') {
+    die(`invalid --theme ${flags.theme} (expected light or dark)`)
+  }
+  const theme = flags.theme === 'dark' ? 'dark' : 'light'
+  const base = await ensureApi(flags)
+
+  const listRes = await fetch(`${base}/api/boards`)
+  if (!listRes.ok) die(`could not list boards (${listRes.status})`)
+  const index = await listRes.json() as { rootBoardId: string; boards: Array<{ id: string; title: string; parentId: string | null }> }
+
+  let root
+  try {
+    root = resolveBoardRef(index, args[0])
+  } catch (err) {
+    die(err instanceof Error ? err.message : String(err))
+  }
+
+  console.log(`Exporting "${root.title}" (${theme}) and nested boards…`)
+  const res = await fetch(`${base}/api/boards/${encodeURIComponent(root.id)}/export?theme=${theme}`, {
+    method: 'POST',
+    signal: AbortSignal.timeout(10 * 60 * 1000),
+  })
+  if (!res.ok) {
+    let message = `${res.status} ${res.statusText}`
+    try {
+      const body = await res.json() as { error?: string }
+      if (body.error) message = body.error
+    } catch {
+      // ignore
+    }
+    die(message)
+  }
+
+  const bytes = Buffer.from(await res.arrayBuffer())
+  const zipName = zipBasename(root.title)
+  const outRaw = flags.out ?? zipName
+  const abs = path.resolve(outRaw)
+
+  if (!flags.out || outRaw.endsWith('.zip')) {
+    await writeFile(abs, bytes)
+    console.log(`Wrote ${abs}`)
+    return
+  }
+
+  const JSZip = (await import('jszip')).default
+  const zip = await JSZip.loadAsync(bytes)
+  await mkdir(abs, { recursive: true })
+  const names = Object.keys(zip.files)
+  for (const name of names) {
+    const entry = zip.files[name]
+    if (!entry || entry.dir) continue
+    await writeFile(path.join(abs, name), await entry.async('nodebuffer'))
+  }
+  const written = names.filter(n => !zip.files[n]?.dir)
+  console.log(`Wrote ${written.length} PNG${written.length === 1 ? '' : 's'} to ${abs}`)
+}
+
 async function main() {
   const { command, args, flags } = parseArgv(process.argv.slice(2))
 
@@ -255,6 +333,9 @@ async function main() {
       break
     case 'workspaces':
       await cmdWorkspaces(flags)
+      break
+    case 'export':
+      await cmdExport(args, flags)
       break
     default:
       die(`unknown command "${command}". Run diagramkit help`)

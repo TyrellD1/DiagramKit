@@ -24,6 +24,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+function filenameFromDisposition(header: string | null, fallback: string) {
+  if (!header) return fallback
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header)
+  if (star?.[1]) return decodeURIComponent(star[1])
+  const quoted = /filename="([^"]+)"/i.exec(header)
+  if (quoted?.[1]) return quoted[1]
+  const plain = /filename=([^;]+)/i.exec(header)
+  return plain?.[1]?.trim() || fallback
+}
+
 export const api = {
   getWorkspace: () => request<WorkspaceIndex>('/boards'),
   getBoard: (id: string) => request<BoardDocument>(`/boards/${id}`),
@@ -52,4 +62,22 @@ export const api = {
     }),
   detachWorkspace: (id: string) =>
     request<WorkspaceList>(`/workspaces/${id}`, { method: 'DELETE' }),
+  exportBoard: async (id: string, theme: 'light' | 'dark') => {
+    const res = await fetch(`/api/boards/${encodeURIComponent(id)}/export?theme=${theme}`, {
+      method: 'POST',
+    })
+    if (!res.ok) {
+      let message = `${res.status} ${res.statusText}`
+      try {
+        const body = await res.json() as { error?: string }
+        if (body.error) message = body.error
+      } catch {
+        // ignore
+      }
+      throw new Error(message)
+    }
+    const blob = await res.blob()
+    const filename = filenameFromDisposition(res.headers.get('Content-Disposition'), 'board-export.zip')
+    return { blob, filename }
+  },
 }

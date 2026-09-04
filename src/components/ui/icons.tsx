@@ -151,3 +151,9 @@ export const BorderNoneIcon = (p: IconProps) => (
     <path d="M4 12L12 4" opacity="0.55" />
   </svg>
 )
+
+export const DownloadIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M8 2.5v8.5M5 8.5l3 3 3-3M3 13.5h10" />
+  </svg>
+)

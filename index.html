@@ -12,7 +12,14 @@
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('diagramkit-theme')
+          var params = new URLSearchParams(location.search)
+          if (params.get('export') === '1' || params.get('export') === 'true') {
+            document.documentElement.setAttribute('data-export', '1')
+          }
+          var t = params.get('theme')
+          if (t !== 'light' && t !== 'dark') {
+            t = localStorage.getItem('diagramkit-theme')
+          }
           if (t !== 'light' && t !== 'dark') {
             t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
           }

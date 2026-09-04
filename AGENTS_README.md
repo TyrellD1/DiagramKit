@@ -18,6 +18,7 @@ Always pass `--no-browser`. Isolate registry/pid/logs with `DIAGRAMKIT_HOME` whe
 diagramkit create ~/.diagram-kit-local1
 diagramkit open ~/.diagram-kit-local1 --no-browser
 diagramkit validate ~/.diagram-kit-local1
+diagramkit export                         # PNG zip of Home + nested boards; needs Chromium
 diagramkit serve                          # skip if already up
 diagramkit help
 ```
@@ -30,7 +31,7 @@ Repo skills are in `agent-skills/`. Point your agent at them (copy or symlink in
 
 | Skill | Use for |
 |---|---|
-| `agent-skills/diagramkit-cli` | install, serve, create, open, validate |
+| `agent-skills/diagramkit-cli` | install, serve, create, open, validate, export |
 | `agent-skills/diagramkit-data-model` | JSON shape, `enterBoardId` vs `childLink` |
 | `agent-skills/diagramkit-write-boards` | HTTP API and file writes |
 

@@ -15,6 +15,7 @@ import {
   saveBoard,
   switchWorkspace,
 } from './store.ts'
+import { exportBoardTree, parseExportTheme, zipExport } from './exportPng.ts'
 
 const PORT = Number(process.env.PORT) || 3001
 const HOST = process.env.HOST || '127.0.0.1'
@@ -119,6 +120,22 @@ api.delete('/boards/:id', async (c) => {
   }
 })
 
+api.post('/boards/:id/export', async (c) => {
+  const theme = parseExportTheme(c.req.query('theme'))
+  try {
+    const result = await exportBoardTree({ boardId: c.req.param('id'), theme })
+    const zip = await zipExport(result)
+    const payload = new Uint8Array(zip.buffer, zip.byteOffset, zip.byteLength)
+    return c.body(payload, 200, {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${result.zipName}"`,
+    })
+  } catch (err) {
+    const status = statusOf(err)
+    return c.json({ error: (err as Error).message }, status === 404 ? 404 : status === 409 ? 409 : 500)
+  }
+})
+
 const app = new Hono()
 app.route('/api', api)
 
@@ -131,7 +148,7 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500)
 })
 
-serve({ fetch: app.fetch, port: PORT, hostname: HOST }, (info) => {
+const server = serve({ fetch: app.fetch, port: PORT, hostname: HOST }, (info) => {
   void ensureApp().then(() => {
     const host = info.address === '::' || info.address === '0.0.0.0' ? 'localhost' : info.address
     console.log(`DiagramKit on http://${host}:${info.port}`)
@@ -139,3 +156,6 @@ serve({ fetch: app.fetch, port: PORT, hostname: HOST }, (info) => {
     if (isProd) console.log(`Serving UI from ./dist`)
   })
 })
+if (typeof server === 'object' && server && 'requestTimeout' in server) {
+  ;(server as { requestTimeout: number }).requestTimeout = 10 * 60 * 1000
+}

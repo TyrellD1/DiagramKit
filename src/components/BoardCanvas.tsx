@@ -27,6 +27,7 @@ import NodeEditor from './NodeEditor'
 import CreateNodeDialog from './CreateNodeDialog'
 import EdgeContextMenu from './EdgeContextMenu'
 import ThemeToggle from './ThemeToggle'
+import ExportButton from './ExportButton'
 import { Toast, useToast } from './Toast'
 import { Kbd, chromeClass } from './ui/controls'
 import { useBoard } from '@/hooks/useBoard'
@@ -35,25 +36,60 @@ import { useNodeActions } from '@/hooks/useNodeActions'
 import { useTheme } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
-import { activeWorkspaceId } from '@/lib/route'
-import { cn } from '@/lib/cn'
+import { activeWorkspaceId, readAppRoute } from '@/lib/route'
 import { uuid } from '@/lib/uuid'
 import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceIndex, WorkspaceList } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
 
 const nodeTypes = { atreides: AtreidesNode }
 
-function FitViewOnBoard({ boardId }: { boardId: string }) {
+function FitViewOnBoard({
+  boardId,
+  instant,
+  empty,
+}: {
+  boardId: string
+  instant?: boolean
+  empty?: boolean
+}) {
   const initialized = useNodesInitialized()
   const { fitView } = useReactFlow()
-  const fittedFor = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!initialized) return
-    if (fittedFor.current === boardId) return
-    fittedFor.current = boardId
-    void fitView(FIT_VIEW_OPTIONS)
-  }, [initialized, boardId, fitView])
+    delete document.documentElement.dataset.exportReady
+    let cancelled = false
+    let started = false
+    const opts = instant ? { duration: 0, padding: FIT_VIEW_OPTIONS.padding } : FIT_VIEW_OPTIONS
+    const markReady = () => {
+      if (!cancelled) document.documentElement.dataset.exportReady = '1'
+    }
+    const afterPaint = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(markReady)
+      })
+    }
+    const runFit = () => {
+      if (started || cancelled) return
+      started = true
+      if (empty) {
+        afterPaint()
+        return
+      }
+      const timeout = new Promise<void>(resolve => {
+        window.setTimeout(resolve, 2000)
+      })
+      void Promise.race([fitView(opts).then(() => undefined).catch(() => undefined), timeout]).then(() => {
+        if (!cancelled) afterPaint()
+      })
+    }
+    if (empty || initialized) runFit()
+    const fallback = window.setTimeout(runFit, 2500)
+    return () => {
+      cancelled = true
+      window.clearTimeout(fallback)
+      delete document.documentElement.dataset.exportReady
+    }
+  }, [initialized, boardId, fitView, instant, empty])
 
   return null
 }
@@ -78,6 +114,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
   const colors = useThemeColors()
   const { theme } = useTheme()
   const workspaceId = activeWorkspaceId(workspaces)
+  const exportMode = readAppRoute().exportMode
   const { currentBoardId, boardStack, pushBoard, popToIndex } = useBoardNavigation(workspaceId, boards)
   const {
     board,
@@ -98,6 +135,15 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
   } = useBoard(currentBoardId)
   const { toast, notify } = useToast()
   const { executeAction } = useNodeActions({ pushBoard, notify })
+
+  useEffect(() => {
+    if (exportMode) document.documentElement.setAttribute('data-export', '1')
+    else document.documentElement.removeAttribute('data-export')
+    return () => {
+      document.documentElement.removeAttribute('data-export')
+      delete document.documentElement.dataset.exportReady
+    }
+  }, [exportMode])
   const [nodes, setNodes, handleNodesChange] = useNodesState<Node<AtreidesNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [shownBoardId, setShownBoardId] = useState<string | null>(null)
@@ -125,9 +171,20 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit')
   const [edgeMenu, setEdgeMenu] = useState<{ edgeId: string; edgeType: string; position: { x: number; y: number } } | null>(null)
 
-  const interactionProps = interactionMode === 'edit'
-    ? { panOnDrag: [1, 2] as number[], zoomOnDoubleClick: false, panOnScroll: true }
-    : { panOnDrag: true as const, zoomOnDoubleClick: false, panOnScroll: false }
+  const interactionProps = exportMode
+    ? {
+        panOnDrag: false,
+        zoomOnScroll: false,
+        zoomOnPinch: false,
+        zoomOnDoubleClick: false,
+        panOnScroll: false,
+        nodesDraggable: false,
+        nodesConnectable: false,
+        elementsSelectable: false,
+      }
+    : interactionMode === 'edit'
+      ? { panOnDrag: [1, 2] as number[], zoomOnDoubleClick: false, panOnScroll: true }
+      : { panOnDrag: true as const, zoomOnDoubleClick: false, panOnScroll: false }
 
   const handleChildLinkClick = useCallback((data: AtreidesNodeData) => {
     if (data.hasLink && data.linkedBoardId) {
@@ -332,21 +389,34 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
 
   return (
     <div className="w-screen h-screen">
-      <BoardSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        currentBoardId={currentBoardId}
-        workspaces={workspaces}
-        onSelectBoard={handleSidebarNavigate}
-        onWorkspacesChange={onWorkspacesChange}
-      />
-      <BoardBreadcrumbs
-        stack={boardStack}
-        onNavigate={popToIndex}
-        offsetLeft={sidebarOpen ? SIDEBAR_WIDTH + 12 : 56}
-      />
-      {!selectedNode && (
-        <ThemeToggle className={cn('fixed top-3 right-3 z-40', chromeClass)} />
+      {!exportMode && (
+        <BoardSidebar
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
+          currentBoardId={currentBoardId}
+          workspaces={workspaces}
+          onSelectBoard={handleSidebarNavigate}
+          onWorkspacesChange={onWorkspacesChange}
+        />
+      )}
+      {!exportMode && (
+        <BoardBreadcrumbs
+          stack={boardStack}
+          onNavigate={popToIndex}
+          offsetLeft={sidebarOpen ? SIDEBAR_WIDTH + 12 : 56}
+        />
+      )}
+      {!exportMode && !selectedNode && (
+        <div className="fixed top-3 right-3 z-40 flex items-center gap-1.5">
+          <ExportButton
+            boardId={currentBoardId}
+            boardTitle={boardStack[boardStack.length - 1]?.boardTitle ?? 'Board'}
+            theme={theme}
+            className={chromeClass}
+            onError={notify}
+          />
+          <ThemeToggle className={chromeClass} />
+        </div>
       )}
 
       <ReactFlow
@@ -375,12 +445,12 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
         {...interactionProps}
       >
         <Background gap={20} size={1} color={colors.grid} bgColor={colors.canvas} />
-        <BoardMiniMap colors={colors} />
-        <CanvasToolbar mode={interactionMode} onModeChange={setInteractionMode} />
-        <FitViewOnBoard boardId={currentBoardId} />
+        {!exportMode && <BoardMiniMap colors={colors} />}
+        {!exportMode && <CanvasToolbar mode={interactionMode} onModeChange={setInteractionMode} />}
+        <FitViewOnBoard boardId={currentBoardId} instant={exportMode} empty={isEmpty} />
       </ReactFlow>
 
-      {isEmpty && !createDialogPos && (
+      {isEmpty && !createDialogPos && !exportMode && (
         <div className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center">
           <div className="animate-fade flex flex-col items-center gap-2 text-center">
             <p className="m-0 text-base font-medium text-muted">This board is empty</p>

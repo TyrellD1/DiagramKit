@@ -1,6 +1,6 @@
 ---
 name: diagramkit-cli
-description: Use the DiagramKit CLI to install, serve, create, open, and validate workspaces. Use when the user mentions diagramkit, starting the app from a terminal, scaffolding a workspace, attaching a folder, or checking board JSON.
+description: Use the DiagramKit CLI to install, serve, create, open, validate, and export workspaces. Use when the user mentions diagramkit, starting the app from a terminal, scaffolding a workspace, attaching a folder, checking board JSON, or exporting PNG screenshots.
 ---
 
 # DiagramKit CLI
@@ -38,7 +38,10 @@ diagramkit create ~/.diagram-kit-local1
 diagramkit open ~/.diagram-kit-local1 --no-browser
 diagramkit validate ~/.diagram-kit-local1
 diagramkit workspaces
+diagramkit export [board]                 # PNG zip of a board + nested children
 ```
+
+`export` screenshots via Playwright (same path as the in-app download button). Needs Chromium (`npx playwright install chromium`). Defaults to the Home board. `--out file.zip` writes a zip; `--out ./dir` (no `.zip`) writes PNGs into that folder.
 
 `open` validates first, attaches the folder (adds it to `~/.diagramkit/workspaces.json` if missing), switches it active, and starts the server if nothing is listening. If the path does not exist it exits 2 and tells you to `create`. If the JSON is invalid it prints file + JSON path + message and does not attach. `validate` does not run `migrations/`; the server migrates boards on read/write. See `AGENTS.md`.
 
@@ -48,13 +51,15 @@ diagramkit workspaces
 
 | Flag | Where | Default |
 |------|--------|---------|
-| `--port` / `-p` | serve, open | `3001` |
+| `--port` / `-p` | serve, open, export | `3001` |
 | `--host` | serve, open | `127.0.0.1` |
 | `--web-port` | serve `--dev` | `5173` |
 | `--dev` | serve, open | production UI on `--port` |
 | `--foreground` / `-f` | serve | background |
 | `--no-browser` | open, create `--open` | **agents: always set this** |
 | `--no-serve` | open | attach only |
+| `--out` | export | `<title>-export.zip` in cwd |
+| `--theme` | export | `light` |
 | `--json` | validate, status, workspaces | text |
 
 App home (registry, pid file, logs): `~/.diagramkit` or `$DIAGRAMKIT_HOME`. Isolate CLI tests with `DIAGRAMKIT_HOME=/tmp/...`.

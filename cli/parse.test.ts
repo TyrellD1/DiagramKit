@@ -27,4 +27,12 @@ describe('parseArgv', () => {
     const parsed = parseArgv(['logs', '-f'])
     expect(parsed.flags.follow).toBe(true)
   })
+
+  test('parses export flags', () => {
+    const parsed = parseArgv(['export', 'Auth service', '--out', './shots.zip', '--theme', 'dark'])
+    expect(parsed.command).toBe('export')
+    expect(parsed.args).toEqual(['Auth service'])
+    expect(parsed.flags.out).toBe('./shots.zip')
+    expect(parsed.flags.theme).toBe('dark')
+  })
 })

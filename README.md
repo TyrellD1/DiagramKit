@@ -21,11 +21,20 @@ diagramkit open ~/my-workspace
 diagramkit stop
 ```
 
-`diagramkit help` lists the rest (`status`, `logs`, `validate`, flags for port and host).
+`diagramkit help` lists the rest (`status`, `logs`, `validate`, `export`, flags for port and host).
 
 `diagramkit serve` uses the production UI in `dist/`. `npm run dev` (and `diagramkit serve --dev`) uses live source. After UI changes, `diagramkit serve` rebuilds if source is newer; hard-refresh or `diagramkit stop && diagramkit serve` if a process was already running.
 
-From source without installing: `npm install && npm run dev` (UI at http://localhost:5173).
+From source without installing: `npm install && npx playwright install chromium && npm run dev` (UI at http://localhost:5173).
+
+## Export PNGs
+
+The in-app download button (top right) and `diagramkit export` both screenshot the current board and every nested child (`enterBoardId`), after Fit to view, into a zip of PNGs.
+
+```sh
+diagramkit export
+diagramkit export "Auth service" --theme dark --out ./auth-export.zip
+```
 
 ## How it stores data
 

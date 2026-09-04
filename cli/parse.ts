@@ -9,6 +9,7 @@ const COMMANDS = new Set([
   'open',
   'validate',
   'workspaces',
+  'export',
   'help',
   'version',
 ])
@@ -25,7 +26,7 @@ const BOOLEAN = new Set([
   'no-serve',
 ])
 
-const VALUE = new Set(['port', 'host', 'web-port', 'name'])
+const VALUE = new Set(['port', 'host', 'web-port', 'name', 'out', 'theme'])
 
 const SHORT: Record<string, string> = {
   h: 'help',
@@ -48,6 +49,8 @@ export interface CliFlags {
   host?: string
   webPort?: number
   name?: string
+  out?: string
+  theme?: string
 }
 
 export interface ParsedCli {
@@ -164,5 +167,7 @@ function setValue(flags: CliFlags, name: string, value: string) {
   else if (name === 'web-port') flags.webPort = parseNumber('--web-port', value)
   else if (name === 'host') flags.host = value
   else if (name === 'name') flags.name = value
+  else if (name === 'out') flags.out = value
+  else if (name === 'theme') flags.theme = value
 }
 

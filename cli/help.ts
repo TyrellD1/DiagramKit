@@ -12,7 +12,8 @@ Commands:
   open <path>        Validate, attach, and open a workspace
   validate <path>    Check workspace JSON against the schema
   workspaces         List attached workspaces
-  help [command]     Show help
+  export             Screenshot a board and its nested children as PNGs
+  help [command]     Show this help
   version            Print version, git revision, and checkout path
 
 Exit codes:
@@ -147,6 +148,33 @@ Options:
   -h, --help           Show this help
 `
 
+const EXPORT = `diagramkit export [board] [options]
+
+Screenshot a board and every nested child (enterBoardId tree) as PNGs.
+Uses the same Playwright capture as the in-app Export button.
+
+[board] is a board id or unique title. Defaults to the workspace Home board.
+
+Writes a zip of PNGs. Each file is named from the board title
+(home.png, home--auth-service.png). Duplicate titles get a short id suffix.
+
+Options:
+      --out <path>     Zip file (*.zip) or a directory of PNGs
+                       (default: <board>-export.zip in the current directory)
+      --theme <name>   light (default) or dark
+  -p, --port <n>       API port if starting a server (default 3001)
+      --web-port <n>   Vite UI port in --dev (default 5173)
+      --dev            Start with Vite live reload if the server is down
+  -h, --help           Show this help
+
+Starts the server if it is not running.
+
+Examples:
+  diagramkit export
+  diagramkit export "Auth service" --theme dark
+  diagramkit export --out ./shots
+`
+
 const HELP: Record<string, string> = {
   serve: SERVE,
   stop: STOP,
@@ -156,6 +184,7 @@ const HELP: Record<string, string> = {
   open: OPEN,
   validate: VALIDATE,
   workspaces: WORKSPACES,
+  export: EXPORT,
   help: GLOBAL,
   version: `diagramkit version\n\nPrint package.json version, git revision, and the checkout this binary runs from.\n`,
 }

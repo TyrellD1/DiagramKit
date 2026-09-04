@@ -16,6 +16,6 @@
 
 Do not add a database. Persist by saving the whole board document (`PUT /api/boards/:id`).
 
-CLI: `diagramkit` (`./install.sh` or `./bin/diagramkit`). Commands: `serve`, `stop`, `status`, `create`, `open`, `validate`, `workspaces`.
+CLI: `diagramkit` (`./install.sh` or `./bin/diagramkit`). Commands: `serve`, `stop`, `status`, `create`, `open`, `validate`, `workspaces`, `export`.
 
 Agent-facing docs: `AGENTS.md`, `agent-skills/diagramkit-cli`, `agent-skills/diagramkit-data-model`, `agent-skills/diagramkit-write-boards`.

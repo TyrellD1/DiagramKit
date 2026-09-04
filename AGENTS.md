@@ -2,7 +2,7 @@
 
 Setup (CLI install and skills): [AGENTS_README.md](AGENTS_README.md).
 
-Prefer the CLI (`diagramkit`) for create / open / validate / serve. Skill: `agent-skills/diagramkit-cli`. Always pass `--no-browser`. Isolate tests with `DIAGRAMKIT_HOME` when the command would touch the registry.
+Prefer the CLI (`diagramkit`) for create / open / validate / serve / export. Skill: `agent-skills/diagramkit-cli`. Always pass `--no-browser`. Isolate tests with `DIAGRAMKIT_HOME` when the command would touch the registry.
 
 ## Git
 

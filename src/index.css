@@ -266,6 +266,13 @@
   color: inherit;
 }
 
+[data-export] .react-flow__attribution,
+[data-export] .react-flow__handle,
+[data-export] .react-flow__nodesselection,
+[data-export] .react-flow__selection {
+  display: none !important;
+}
+
 /* Markdown inside cards */
 .card-prose > :first-child { margin-top: 0; }
 .card-prose > :last-child { margin-bottom: 0; }
