@@ -12,3 +12,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     </ThemeProvider>
   </React.StrictMode>,
 )
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  void navigator.serviceWorker.register('/sw.js')
+}

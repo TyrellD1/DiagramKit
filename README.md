@@ -15,6 +15,8 @@ diagramkit serve
 
 That puts `diagramkit` on `~/.local/bin` and starts the app in the background at [http://127.0.0.1:3001](http://127.0.0.1:3001).
 
+To install it as a Mac app, open that URL in Safari and choose **File → Add to Dock**. In Chrome, use the install icon in the address bar. Use `http://127.0.0.1:3001` (localhost counts as a secure context).
+
 ```sh
 diagramkit create ~/my-workspace
 diagramkit open ~/my-workspace

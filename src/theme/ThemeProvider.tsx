@@ -29,8 +29,15 @@ function readStoredTheme(): Theme {
   return 'dark'
 }
 
+const THEME_COLOR = {
+  light: '#f3eee6',
+  dark: '#211f1c',
+} as const
+
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme)
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', THEME_COLOR[theme])
   try {
     localStorage.setItem(STORAGE_KEY, theme)
   } catch {

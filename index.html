@@ -2,7 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#211f1c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="DiagramKit" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,6 +31,8 @@
             t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
           }
           document.documentElement.setAttribute('data-theme', t)
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', t === 'light' ? '#f3eee6' : '#211f1c')
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark')
         }
