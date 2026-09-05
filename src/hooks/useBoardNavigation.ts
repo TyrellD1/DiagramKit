@@ -17,7 +17,13 @@ export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) 
   workspaceRef.current = workspaceId
 
   useEffect(() => {
-    setBoardStack(boardPath(boards, currentRef.current))
+    const resolved = resolveBoardId(boards, currentRef.current)
+    if (resolved !== currentRef.current) {
+      currentRef.current = resolved
+      setCurrentBoardId(resolved)
+      writeAppRoute({ workspaceId: workspaceRef.current, boardId: resolved }, 'replace')
+    }
+    setBoardStack(boardPath(boards, resolved))
   }, [boards])
 
   const goToBoard = useCallback((

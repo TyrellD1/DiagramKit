@@ -1,12 +1,13 @@
-import { useState, useEffect, useId, useRef } from 'react'
+import { useState, useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useBoards, type BoardTreeNode } from '@/hooks/useBoards'
 import { api } from '@/lib/api'
-import { Button, chromeClass, SectionLabel, TextInput } from './ui/controls'
-import { ChevronRightIcon, CloseIcon, MenuIcon, PlusIcon } from './ui/icons'
+import { Button, chromeClass, MenuItem, menuClass, SectionLabel, TextInput } from './ui/controls'
+import { ChevronRightIcon, CloseIcon, MenuIcon, PlusIcon, TrashIcon } from './ui/icons'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
 import ThemeToggle from './ThemeToggle'
+import DeleteBoardModal from './DeleteBoardModal'
 import { cn } from '@/lib/cn'
-import type { WorkspaceList } from '@/types'
+import type { WorkspaceIndex, WorkspaceList } from '@/types'
 
 export const SIDEBAR_WIDTH = 288
 
@@ -25,15 +26,26 @@ interface Props {
   workspaces: WorkspaceList
   onSelectBoard: (boardId: string, title: string) => void
   onWorkspacesChange: (next: WorkspaceList) => void
+  onBoardsChange: (next: WorkspaceIndex) => void
 }
 
-export default function BoardSidebar({ open, onOpenChange, currentBoardId, workspaces, onSelectBoard, onWorkspacesChange }: Props) {
-  const { tree, loading, reload } = useBoards()
+export default function BoardSidebar({
+  open,
+  onOpenChange,
+  currentBoardId,
+  workspaces,
+  onSelectBoard,
+  onWorkspacesChange,
+  onBoardsChange,
+}: Props) {
+  const { tree, rootBoardId, loading, reload } = useBoards()
   const setOpen = (next: boolean | ((prev: boolean) => boolean)) =>
     onOpenChange(typeof next === 'function' ? next(open) : next)
   const [composing, setComposing] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [creating, setCreating] = useState(false)
+  const [menu, setMenu] = useState<{ id: string; title: string; x: number; y: number } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null)
   const newBoardId = useId()
   const newBoardRef = useRef<HTMLInputElement>(null)
 
@@ -61,11 +73,20 @@ export default function BoardSidebar({ open, onOpenChange, currentBoardId, works
     try {
       const created = await api.createBoard({ title })
       setComposing(false)
-      await reload()
+      const next = await reload()
+      onBoardsChange(next)
       onSelectBoard(created.id, created.title)
     } finally {
       setCreating(false)
     }
+  }
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return
+    await api.deleteBoard(pendingDelete.id)
+    const next = await reload()
+    onBoardsChange(next)
+    setPendingDelete(null)
   }
 
   return (
@@ -157,6 +178,7 @@ export default function BoardSidebar({ open, onOpenChange, currentBoardId, works
                     depth={0}
                     currentBoardId={currentBoardId}
                     onSelect={onSelectBoard}
+                    onContextMenu={(board, x, y) => setMenu({ id: board.id, title: board.title, x, y })}
                   />
                 ))
               )}
@@ -171,6 +193,27 @@ export default function BoardSidebar({ open, onOpenChange, currentBoardId, works
           </div>
         </aside>
       )}
+
+      {menu && (
+        <BoardTreeMenu
+          title={menu.title}
+          isRoot={menu.id === rootBoardId}
+          position={{ x: menu.x, y: menu.y }}
+          onDelete={() => {
+            setPendingDelete({ id: menu.id, title: menu.title })
+            setMenu(null)
+          }}
+          onClose={() => setMenu(null)}
+        />
+      )}
+
+      {pendingDelete && (
+        <DeleteBoardModal
+          title={pendingDelete.title}
+          onConfirm={handleDelete}
+          onClose={() => setPendingDelete(null)}
+        />
+      )}
     </>
   )
 }
@@ -184,11 +227,13 @@ function TreeItem({
   depth,
   currentBoardId,
   onSelect,
+  onContextMenu,
 }: {
   node: BoardTreeNode
   depth: number
   currentBoardId: string | null
   onSelect: (boardId: string, title: string) => void
+  onContextMenu: (board: { id: string; title: string }, x: number, y: number) => void
 }) {
   const [expanded, setExpanded] = useState(true)
   const isActive = node.board.id === currentBoardId
@@ -219,6 +264,11 @@ function TreeItem({
         <button
           type="button"
           onClick={() => onSelect(node.board.id, node.board.title)}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onContextMenu(node.board, e.clientX, e.clientY)
+          }}
           className={cn(
             'min-w-0 flex-1 truncate border-none bg-transparent p-0 py-1 text-left cursor-pointer',
             isActive && 'font-medium',
@@ -238,10 +288,74 @@ function TreeItem({
               depth={depth + 1}
               currentBoardId={currentBoardId}
               onSelect={onSelect}
+              onContextMenu={onContextMenu}
             />
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+function BoardTreeMenu({
+  title,
+  isRoot,
+  position,
+  onDelete,
+  onClose,
+}: {
+  title: string
+  isRoot: boolean
+  position: { x: number; y: number }
+  onDelete: () => void
+  onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState(position)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const x = Math.min(position.x, window.innerWidth - rect.width - 8)
+    const y = Math.min(position.y, window.innerHeight - rect.height - 8)
+    setPos({ x: Math.max(8, x), y: Math.max(8, y) })
+  }, [position])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40"
+        onClick={onClose}
+        onContextMenu={e => { e.preventDefault(); onClose() }}
+      />
+      <div
+        ref={ref}
+        role="menu"
+        aria-label={`${title} actions`}
+        className={cn('animate-pop fixed z-50 min-w-[168px]', menuClass)}
+        style={{ left: pos.x, top: pos.y }}
+      >
+        <MenuItem
+          role="menuitem"
+          destructive
+          disabled={isRoot}
+          title={isRoot ? 'The Home board cannot be deleted' : `Delete ${title}`}
+          icon={<TrashIcon size={14} />}
+          className={isRoot ? 'opacity-40 cursor-not-allowed hover:bg-transparent' : undefined}
+          onClick={() => { if (!isRoot) onDelete() }}
+        >
+          Delete
+        </MenuItem>
+      </div>
+    </>
   )
 }

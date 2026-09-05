@@ -119,6 +119,7 @@ function App() {
         boards={boards}
         workspaces={workspaces}
         onWorkspacesChange={handleWorkspacesChange}
+        onBoardsChange={setBoards}
       />
     </ReactFlowProvider>
   )

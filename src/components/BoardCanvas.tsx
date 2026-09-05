@@ -136,9 +136,10 @@ interface Props {
   boards: WorkspaceIndex
   workspaces: WorkspaceList
   onWorkspacesChange: (next: WorkspaceList) => void
+  onBoardsChange: (next: WorkspaceIndex) => void
 }
 
-export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: Props) {
+export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, onBoardsChange }: Props) {
   const colors = useThemeColors()
   const { theme } = useTheme()
   const workspaceId = activeWorkspaceId(workspaces)
@@ -457,6 +458,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
           workspaces={workspaces}
           onSelectBoard={handleSidebarNavigate}
           onWorkspacesChange={onWorkspacesChange}
+          onBoardsChange={onBoardsChange}
         />
       )}
       {!exportMode && (

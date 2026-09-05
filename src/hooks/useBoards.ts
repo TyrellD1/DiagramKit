@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
-import type { BoardSummary } from '@/types'
+import type { BoardSummary, WorkspaceIndex } from '@/types'
 
 export interface BoardTreeNode {
   board: BoardSummary
@@ -29,15 +29,18 @@ function buildTree(boards: BoardSummary[]): BoardTreeNode[] {
 
 export function useBoards() {
   const [boards, setBoards] = useState<BoardSummary[]>([])
+  const [rootBoardId, setRootBoardId] = useState<string | null>(null)
   const [tree, setTree] = useState<BoardTreeNode[]>([])
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<WorkspaceIndex> => {
     setLoading(true)
     try {
       const data = await api.getWorkspace()
       setBoards(data.boards)
+      setRootBoardId(data.rootBoardId)
       setTree(buildTree(data.boards))
+      return data
     } finally {
       setLoading(false)
     }
@@ -45,5 +48,5 @@ export function useBoards() {
 
   useEffect(() => { load() }, [load])
 
-  return { boards, tree, loading, reload: load }
+  return { boards, rootBoardId, tree, loading, reload: load }
 }
