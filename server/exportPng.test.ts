@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { parseExportTheme, uiOriginCandidates } from './exportPng.ts'
+import { parseExportTheme, uiOriginCandidates, parseExportChildren } from './exportPng.ts'
 
 describe('uiOriginCandidates', () => {
   test('production only uses the API port', () => {
@@ -21,4 +21,11 @@ test('parseExportTheme defaults to light', () => {
   expect(parseExportTheme('light')).toBe('light')
   expect(parseExportTheme('nope')).toBe('light')
   expect(parseExportTheme(undefined)).toBe('light')
+})
+
+test('parseExportChildren defaults to including nested boards', () => {
+  expect(parseExportChildren(undefined)).toBe(true)
+  expect(parseExportChildren('1')).toBe(true)
+  expect(parseExportChildren('0')).toBe(false)
+  expect(parseExportChildren('false')).toBe(false)
 })

@@ -150,18 +150,20 @@ Options:
 
 const EXPORT = `diagramkit export [board] [options]
 
-Screenshot a board and every nested child (enterBoardId tree) as PNGs.
-Uses the same Playwright capture as the in-app Export button.
+Screenshot a board as PNGs. Nested children (enterBoardId tree) are included
+by default. Uses the same Playwright capture as the in-app Export button.
 
 [board] is a board id or unique title. Defaults to the workspace Home board.
 
-Writes a zip of PNGs. Each file is named from the board title
+With children, writes a zip of PNGs named from board titles
 (home.png, home--auth-service.png). Duplicate titles get a short id suffix.
+--no-children writes a single PNG of the named board.
 
 Options:
-      --out <path>     Zip file (*.zip) or a directory of PNGs
-                       (default: <board>-export.zip in the current directory)
+      --out <path>     Zip file (*.zip), a PNG, or a directory of PNGs
+                       (default: <board>-export.zip, or <board>.png with --no-children)
       --theme <name>   light (default) or dark
+      --no-children    Only the named board, not nested pages
   -p, --port <n>       API port if starting a server (default 3001)
       --web-port <n>   Vite UI port in --dev (default 5173)
       --dev            Start with Vite live reload if the server is down
@@ -172,6 +174,7 @@ Starts the server if it is not running.
 Examples:
   diagramkit export
   diagramkit export "Auth service" --theme dark
+  diagramkit export --no-children --out ./home.png
   diagramkit export --out ./shots
 `
 

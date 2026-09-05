@@ -24,6 +24,7 @@ const BOOLEAN = new Set([
   'open',
   'no-browser',
   'no-serve',
+  'no-children',
 ])
 
 const VALUE = new Set(['port', 'host', 'web-port', 'name', 'out', 'theme'])
@@ -45,6 +46,7 @@ export interface CliFlags {
   open: boolean
   noBrowser: boolean
   noServe: boolean
+  noChildren: boolean
   port?: number
   host?: string
   webPort?: number
@@ -70,13 +72,15 @@ function emptyFlags(): CliFlags {
     open: false,
     noBrowser: false,
     noServe: false,
+    noChildren: false,
   }
 }
 
-function camel(name: string): keyof CliFlags | 'webPort' | 'noBrowser' | 'noServe' {
+function camel(name: string): keyof CliFlags | 'webPort' | 'noBrowser' | 'noServe' | 'noChildren' {
   if (name === 'web-port') return 'webPort'
   if (name === 'no-browser') return 'noBrowser'
   if (name === 'no-serve') return 'noServe'
+  if (name === 'no-children') return 'noChildren'
   return name as keyof CliFlags
 }
 

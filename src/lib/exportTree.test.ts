@@ -6,6 +6,7 @@ import {
   resolveBoardRef,
   slugTitle,
   zipBasename,
+  pngBasename,
 } from './exportTree'
 
 const index: WorkspaceIndex = {
@@ -52,6 +53,12 @@ describe('namedBoardTree', () => {
       'auth-service--tokens.png',
     ])
   })
+
+  test('omits nested boards when children is false', () => {
+    expect(namedBoardTree(index, 'root', { children: false }).map(n => n.filename)).toEqual([
+      'home.png',
+    ])
+  })
 })
 
 describe('resolveBoardRef', () => {
@@ -70,4 +77,8 @@ describe('resolveBoardRef', () => {
 
 test('zipBasename', () => {
   expect(zipBasename('Auth Service')).toBe('auth-service-export.zip')
+})
+
+test('pngBasename', () => {
+  expect(pngBasename('Auth Service')).toBe('auth-service.png')
 })

@@ -62,10 +62,12 @@ export const api = {
     }),
   detachWorkspace: (id: string) =>
     request<WorkspaceList>(`/workspaces/${id}`, { method: 'DELETE' }),
-  exportBoard: async (id: string, theme: 'light' | 'dark') => {
-    const res = await fetch(`/api/boards/${encodeURIComponent(id)}/export?theme=${theme}`, {
-      method: 'POST',
-    })
+  exportBoard: async (id: string, theme: 'light' | 'dark', opts?: { children?: boolean }) => {
+    const children = opts?.children !== false
+    const res = await fetch(
+      `/api/boards/${encodeURIComponent(id)}/export?theme=${theme}&children=${children ? '1' : '0'}`,
+      { method: 'POST' },
+    )
     if (!res.ok) {
       let message = `${res.status} ${res.statusText}`
       try {
@@ -77,7 +79,10 @@ export const api = {
       throw new Error(message)
     }
     const blob = await res.blob()
-    const filename = filenameFromDisposition(res.headers.get('Content-Disposition'), 'board-export.zip')
+    const filename = filenameFromDisposition(
+      res.headers.get('Content-Disposition'),
+      children ? 'board-export.zip' : 'board.png',
+    )
     return { blob, filename }
   },
 }

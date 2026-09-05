@@ -15,7 +15,7 @@ import {
   saveBoard,
   switchWorkspace,
 } from './store.ts'
-import { exportBoardTree, parseExportTheme, zipExport } from './exportPng.ts'
+import { exportBoardTree, parseExportChildren, parseExportTheme, zipExport } from './exportPng.ts'
 
 const PORT = Number(process.env.PORT) || 3001
 const HOST = process.env.HOST || '127.0.0.1'
@@ -122,8 +122,18 @@ api.delete('/boards/:id', async (c) => {
 
 api.post('/boards/:id/export', async (c) => {
   const theme = parseExportTheme(c.req.query('theme'))
+  const children = parseExportChildren(c.req.query('children'))
   try {
-    const result = await exportBoardTree({ boardId: c.req.param('id'), theme })
+    const result = await exportBoardTree({ boardId: c.req.param('id'), theme, children })
+    if (!children) {
+      const file = result.files[0]
+      if (!file) return c.json({ error: 'Board not found' }, 404)
+      const payload = new Uint8Array(file.bytes.buffer, file.bytes.byteOffset, file.bytes.byteLength)
+      return c.body(payload, 200, {
+        'Content-Type': 'image/png',
+        'Content-Disposition': `attachment; filename="${file.filename}"`,
+      })
+    }
     const zip = await zipExport(result)
     const payload = new Uint8Array(zip.buffer, zip.byteOffset, zip.byteLength)
     return c.body(payload, 200, {

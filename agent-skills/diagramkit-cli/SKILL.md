@@ -41,7 +41,7 @@ diagramkit workspaces
 diagramkit export [board]                 # PNG zip of a board + nested children
 ```
 
-`export` screenshots via Playwright (same path as the in-app download button). Needs Chromium (`npx playwright install chromium`). Defaults to the Home board. `--out file.zip` writes a zip; `--out ./dir` (no `.zip`) writes PNGs into that folder.
+`export` screenshots via Playwright (same path as the in-app download button). Needs Chromium (`npx playwright install chromium`). Defaults to the Home board and nested `enterBoardId` children. `--no-children` is only that board (a PNG). `--out file.zip` writes a zip; `--out ./dir` (no `.zip`) writes PNGs into that folder.
 
 `open` validates first, attaches the folder (adds it to `~/.diagramkit/workspaces.json` if missing), switches it active, and starts the server if nothing is listening. If the path does not exist it exits 2 and tells you to `create`. If the JSON is invalid it prints file + JSON path + message and does not attach. `validate` does not run `migrations/`; the server migrates boards on read/write. See `AGENTS.md`.
 
@@ -60,6 +60,7 @@ diagramkit export [board]                 # PNG zip of a board + nested children
 | `--no-serve` | open | attach only |
 | `--out` | export | `<title>-export.zip` in cwd |
 | `--theme` | export | `light` |
+| `--no-children` | export | include nested boards |
 | `--json` | validate, status, workspaces | text |
 
 App home (registry, pid file, logs): `~/.diagramkit` or `$DIAGRAMKIT_HOME`. Isolate CLI tests with `DIAGRAMKIT_HOME=/tmp/...`.

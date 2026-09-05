@@ -31,11 +31,12 @@ From source without installing: `npm install && npx playwright install chromium 
 
 ## Export PNGs
 
-The in-app download button (top right) and `diagramkit export` both screenshot the current board and every nested child (`enterBoardId`), after Fit to view, into a zip of PNGs.
+The in-app download button (top right) and `diagramkit export` both screenshot a board after Fit to view. Nested children (`enterBoardId`) are included by default — a zip of PNGs. Hover the download button for a **Children** switch (remembered). `--no-children` exports only the current board as a PNG.
 
 ```sh
 diagramkit export
 diagramkit export "Auth service" --theme dark --out ./auth-export.zip
+diagramkit export --no-children
 ```
 
 ## How it stores data

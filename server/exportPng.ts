@@ -56,6 +56,7 @@ let exportChain: Promise<unknown> = Promise.resolve()
 export function exportBoardTree(opts: {
   boardId: string
   theme?: ExportTheme
+  children?: boolean
   uiOrigin?: string
   port?: number
   webPort?: number
@@ -68,14 +69,16 @@ export function exportBoardTree(opts: {
 async function runExport(opts: {
   boardId: string
   theme?: ExportTheme
+  children?: boolean
   uiOrigin?: string
   port?: number
   webPort?: number
 }): Promise<ExportResult> {
   const theme: ExportTheme = opts.theme === 'dark' ? 'dark' : 'light'
+  const children = opts.children !== false
   const index = await listWorkspace()
   const root = resolveBoardRef(index, opts.boardId)
-  const named = namedBoardTree(index, root.id)
+  const named = namedBoardTree(index, root.id, { children })
   if (named.length === 0) fail(`Board not found: ${opts.boardId}`, 404)
 
   const spaces = await listAttachedWorkspaces()
@@ -164,4 +167,9 @@ export async function zipExport(result: ExportResult): Promise<Buffer> {
 
 export function parseExportTheme(value: string | null | undefined): ExportTheme {
   return value === 'dark' ? 'dark' : 'light'
+}
+
+export function parseExportChildren(value: string | null | undefined): boolean {
+  if (value === '0' || value === 'false' || value === 'no') return false
+  return true
 }

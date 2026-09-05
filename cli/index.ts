@@ -12,7 +12,7 @@ import { readVersion } from './version.ts'
 import { validateWorkspace } from './schema.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { resolveBoardRef, zipBasename } from '../src/lib/exportTree.ts'
+import { resolveBoardRef, zipBasename, pngBasename } from '../src/lib/exportTree.ts'
 import {
   apiUrl,
   DEFAULT_HOST,
@@ -238,6 +238,7 @@ async function cmdExport(args: string[], flags: CliFlags) {
     die(`invalid --theme ${flags.theme} (expected light or dark)`)
   }
   const theme = flags.theme === 'dark' ? 'dark' : 'light'
+  const children = !flags.noChildren
   const base = await ensureApi(flags)
 
   const listRes = await fetch(`${base}/api/boards`)
@@ -251,8 +252,10 @@ async function cmdExport(args: string[], flags: CliFlags) {
     die(err instanceof Error ? err.message : String(err))
   }
 
-  console.log(`Exporting "${root.title}" (${theme}) and nested boards…`)
-  const res = await fetch(`${base}/api/boards/${encodeURIComponent(root.id)}/export?theme=${theme}`, {
+  const nested = children ? ' and nested boards' : ''
+  console.log(`Exporting "${root.title}" (${theme})${nested}…`)
+  const query = `theme=${theme}&children=${children ? '1' : '0'}`
+  const res = await fetch(`${base}/api/boards/${encodeURIComponent(root.id)}/export?${query}`, {
     method: 'POST',
     signal: AbortSignal.timeout(10 * 60 * 1000),
   })
@@ -268,9 +271,30 @@ async function cmdExport(args: string[], flags: CliFlags) {
   }
 
   const bytes = Buffer.from(await res.arrayBuffer())
-  const zipName = zipBasename(root.title)
-  const outRaw = flags.out ?? zipName
+  const kind = (res.headers.get('content-type') ?? '').includes('zip') ? 'zip' : 'png'
+  const defaultName = kind === 'zip' ? zipBasename(root.title) : pngBasename(root.title)
+  const outRaw = flags.out ?? defaultName
   const abs = path.resolve(outRaw)
+
+  if (kind === 'png') {
+    if (!flags.out || outRaw.endsWith('.png') || outRaw.endsWith('.zip')) {
+      if (outRaw.endsWith('.zip')) {
+        const JSZip = (await import('jszip')).default
+        const zip = new JSZip()
+        zip.file(pngBasename(root.title), bytes)
+        await writeFile(abs, await zip.generateAsync({ type: 'nodebuffer' }))
+      } else {
+        await writeFile(abs, bytes)
+      }
+      console.log(`Wrote ${abs}`)
+      return
+    }
+    await mkdir(abs, { recursive: true })
+    const dest = path.join(abs, pngBasename(root.title))
+    await writeFile(dest, bytes)
+    console.log(`Wrote 1 PNG to ${abs}`)
+    return
+  }
 
   if (!flags.out || outRaw.endsWith('.zip')) {
     await writeFile(abs, bytes)

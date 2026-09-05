@@ -29,10 +29,11 @@ describe('parseArgv', () => {
   })
 
   test('parses export flags', () => {
-    const parsed = parseArgv(['export', 'Auth service', '--out', './shots.zip', '--theme', 'dark'])
+    const parsed = parseArgv(['export', 'Auth service', '--out', './shots.zip', '--theme', 'dark', '--no-children'])
     expect(parsed.command).toBe('export')
     expect(parsed.args).toEqual(['Auth service'])
     expect(parsed.flags.out).toBe('./shots.zip')
     expect(parsed.flags.theme).toBe('dark')
+    expect(parsed.flags.noChildren).toBe(true)
   })
 })

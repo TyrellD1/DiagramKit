@@ -44,8 +44,15 @@ export interface NamedExportBoard {
 }
 
 /** DFS from root; filenames are ancestor slugs joined with `--`. Jump links are ignored. */
-export function namedBoardTree(index: WorkspaceIndex, rootId: string): NamedExportBoard[] {
-  const boards = collectBoardTree(index, rootId)
+export function namedBoardTree(
+  index: WorkspaceIndex,
+  rootId: string,
+  opts?: { children?: boolean },
+): NamedExportBoard[] {
+  const includeChildren = opts?.children !== false
+  const boards = includeChildren
+    ? collectBoardTree(index, rootId)
+    : index.boards.filter(board => board.id === rootId)
   const byId = new Map(boards.map(board => [board.id, board]))
   const used = new Set<string>()
 
@@ -75,6 +82,10 @@ export function namedBoardTree(index: WorkspaceIndex, rootId: string): NamedExpo
 
 export function zipBasename(title: string): string {
   return `${slugTitle(title)}-export.zip`
+}
+
+export function pngBasename(title: string): string {
+  return `${slugTitle(title)}.png`
 }
 
 export function resolveBoardRef(index: WorkspaceIndex, ref?: string | null): BoardSummary {
