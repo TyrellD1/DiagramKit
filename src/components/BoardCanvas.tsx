@@ -54,12 +54,11 @@ function FitViewOnBoard({
 }) {
   const initialized = useNodesInitialized()
   const { fitView } = useReactFlow()
+  const fittedFor = useRef<string | null>(null)
 
   useEffect(() => {
     delete document.documentElement.dataset.exportReady
     let cancelled = false
-    let started = false
-    const opts = instant ? { duration: 0, padding: FIT_VIEW_OPTIONS.padding } : FIT_VIEW_OPTIONS
     const markReady = () => {
       if (!cancelled) document.documentElement.dataset.exportReady = '1'
     }
@@ -68,25 +67,41 @@ function FitViewOnBoard({
         requestAnimationFrame(markReady)
       })
     }
-    const runFit = () => {
-      if (started || cancelled) return
-      started = true
-      if (empty) {
-        afterPaint()
-        return
+
+    // Adding a node flips `initialized` (and `empty` for the first card). Fit
+    // once per board mount; later measurement is not a board switch.
+    if (fittedFor.current === boardId) {
+      afterPaint()
+      return () => {
+        cancelled = true
+        delete document.documentElement.dataset.exportReady
       }
-      const timeout = new Promise<void>(resolve => {
-        window.setTimeout(resolve, 2000)
-      })
-      void Promise.race([fitView(opts).then(() => undefined).catch(() => undefined), timeout]).then(() => {
-        if (!cancelled) afterPaint()
-      })
     }
-    if (empty || initialized) runFit()
-    const fallback = window.setTimeout(runFit, 2500)
+
+    if (!empty && !initialized) return
+
+    const opts = instant ? { duration: 0, padding: FIT_VIEW_OPTIONS.padding } : FIT_VIEW_OPTIONS
+    if (empty) {
+      fittedFor.current = boardId
+      afterPaint()
+      return () => {
+        cancelled = true
+        delete document.documentElement.dataset.exportReady
+      }
+    }
+
+    let timer = 0
+    const timeout = new Promise<void>(resolve => {
+      timer = window.setTimeout(resolve, 2000)
+    })
+    void Promise.race([fitView(opts).then(() => undefined).catch(() => undefined), timeout]).then(() => {
+      if (cancelled) return
+      fittedFor.current = boardId
+      afterPaint()
+    })
     return () => {
       cancelled = true
-      window.clearTimeout(fallback)
+      window.clearTimeout(timer)
       delete document.documentElement.dataset.exportReady
     }
   }, [initialized, boardId, fitView, instant, empty])
