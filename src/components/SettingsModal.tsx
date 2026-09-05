@@ -133,31 +133,31 @@ function OpacityField({
           aria-valuenow={value}
           aria-valuetext={`${value} percent`}
         />
-        <div className="relative w-[3.25rem] shrink-0">
-          <TextInput
-            id={inputId}
-            inputMode="numeric"
-            min={0}
-            max={100}
-            value={draft}
-            aria-label={`${label} percent`}
-            onChange={e => {
-              const next = e.target.value
-              setDraft(next)
-              if (/^\d{1,3}$/.test(next.trim())) {
-                const n = Number.parseInt(next, 10)
-                if (n >= 0 && n <= 100) onChange(n)
-              }
-            }}
-            onBlur={commitDraft}
-            onKeyDown={e => {
-              if (e.key === 'Enter') e.currentTarget.blur()
-            }}
-            className="px-2 py-[5px] pr-6 text-right font-mono text-xs tabular-nums"
-          />
-          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-2xs text-faint">
-            %
-          </span>
+        <div className="flex shrink-0 items-center gap-1">
+          <div className="w-16">
+            <TextInput
+              id={inputId}
+              inputMode="numeric"
+              min={0}
+              max={100}
+              value={draft}
+              aria-label={`${label} percent`}
+              onChange={e => {
+                const next = e.target.value
+                setDraft(next)
+                if (/^\d{1,3}$/.test(next.trim())) {
+                  const n = Number.parseInt(next, 10)
+                  if (n >= 0 && n <= 100) onChange(n)
+                }
+              }}
+              onBlur={commitDraft}
+              onKeyDown={e => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+              }}
+              className="!px-2 py-[5px] text-center font-mono text-xs tabular-nums"
+            />
+          </div>
+          <span className="text-2xs text-faint">%</span>
         </div>
       </div>
     </Field>

@@ -270,14 +270,10 @@
 
 .dk-sidebar-left {
   background: color-mix(in oklch, var(--surface) calc(var(--sidebar-left-opacity) * 100%), transparent);
-  -webkit-backdrop-filter: blur(calc((1 - var(--sidebar-left-opacity)) * 16px));
-  backdrop-filter: blur(calc((1 - var(--sidebar-left-opacity)) * 16px));
 }
 
 .dk-sidebar-right {
   background: color-mix(in oklch, var(--surface) calc(var(--sidebar-right-opacity) * 100%), transparent);
-  -webkit-backdrop-filter: blur(calc((1 - var(--sidebar-right-opacity)) * 16px));
-  backdrop-filter: blur(calc((1 - var(--sidebar-right-opacity)) * 16px));
 }
 
 .dk-slider {
