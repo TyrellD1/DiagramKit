@@ -1,8 +1,14 @@
-# DiagramKit
+<p align="center">
+  <img src="docs/logo.png" width="128" alt="DiagramKit" />
+</p>
 
-![DiagramKit](docs/header.png)
+<h1 align="center">DiagramKit</h1>
 
-A hierarchical spatial board tool for creating mind maps and workflows.
+<p align="center">A hierarchical spatial board tool for creating mind maps and workflows.</p>
+
+<p align="center">
+  <img src="docs/example.png" width="780" alt="Example DiagramKit board" />
+</p>
 
 ## Install
 
