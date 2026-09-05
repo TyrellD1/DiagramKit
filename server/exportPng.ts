@@ -125,7 +125,21 @@ async function runExport(opts: {
       await page.goto(url, { waitUntil: 'load' })
       await page.waitForSelector('html[data-export-ready="1"]')
       await page.evaluate(() => document.fonts.ready)
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await page.waitForFunction(() => {
+        const paths = document.querySelectorAll('.react-flow__edge-path')
+        if (paths.length === 0) return true
+        for (const el of paths) {
+          if (!(el instanceof SVGGraphicsElement)) return false
+          try {
+            const box = el.getBBox()
+            if (!Number.isFinite(box.width) || (box.width <= 2 && box.height <= 2)) return false
+          } catch {
+            return false
+          }
+        }
+        return true
+      })
+      await new Promise(resolve => setTimeout(resolve, 80))
       const flow = page.locator('.react-flow')
       await flow.waitFor({ state: 'visible' })
       const bytes = Buffer.from(await flow.screenshot({ type: 'png', animations: 'disabled' }))

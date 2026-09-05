@@ -37,6 +37,7 @@ import { useTheme } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
 import { activeWorkspaceId, readAppRoute } from '@/lib/route'
+import { waitForFlowEdges } from '@/lib/exportReady'
 import { uuid } from '@/lib/uuid'
 import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceIndex, WorkspaceList } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
@@ -63,8 +64,17 @@ function FitViewOnBoard({
       if (!cancelled) document.documentElement.dataset.exportReady = '1'
     }
     const afterPaint = () => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(markReady)
+      const finish = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(markReady)
+        })
+      }
+      if (!instant) {
+        finish()
+        return
+      }
+      void waitForFlowEdges().then(() => {
+        if (!cancelled) finish()
       })
     }
 

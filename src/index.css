@@ -267,10 +267,16 @@
 }
 
 [data-export] .react-flow__attribution,
-[data-export] .react-flow__handle,
 [data-export] .react-flow__nodesselection,
 [data-export] .react-flow__selection {
   display: none !important;
+}
+
+/* Keep handles in layout so React Flow can measure them. display:none
+   collapsed every edge to the origin (or off-canvas after fit). */
+[data-export] .react-flow__handle {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Markdown inside cards */
