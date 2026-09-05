@@ -84,7 +84,7 @@ export default function BoardSidebar({ open, onOpenChange, currentBoardId, works
 
       {open && (
         <aside
-          className="animate-panel-left fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-border bg-surface"
+          className="dk-sidebar-left animate-panel-left fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-border"
           style={{ width: SIDEBAR_WIDTH }}
         >
           <div className="flex h-14 shrink-0 items-center pl-12 pr-2">

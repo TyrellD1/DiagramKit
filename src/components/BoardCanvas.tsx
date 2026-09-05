@@ -28,6 +28,7 @@ import CreateNodeDialog from './CreateNodeDialog'
 import EdgeContextMenu from './EdgeContextMenu'
 import ThemeToggle from './ThemeToggle'
 import ExportButton from './ExportButton'
+import SettingsModal, { SettingsButton } from './SettingsModal'
 import { Toast, useToast } from './Toast'
 import { Kbd, chromeClass } from './ui/controls'
 import { useBoard } from '@/hooks/useBoard'
@@ -191,6 +192,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
   )
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen)
   const [createDialogPos, setCreateDialogPos] = useState<{ x: number; y: number } | null>(null)
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit')
@@ -431,17 +433,30 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
           offsetLeft={sidebarOpen ? SIDEBAR_WIDTH + 12 : 56}
         />
       )}
-      {!exportMode && !selectedNode && (
-        <div className="fixed top-3 right-3 z-40 flex items-center gap-1.5">
-          <ExportButton
-            boardId={currentBoardId}
-            boardTitle={boardStack[boardStack.length - 1]?.boardTitle ?? 'Board'}
-            theme={theme}
+      {!exportMode && (
+        <div
+          className="fixed top-3 z-40 flex items-center gap-1.5"
+          style={{ right: selectedNode ? 412 : 12 }}
+        >
+          {!selectedNode && (
+            <ExportButton
+              boardId={currentBoardId}
+              boardTitle={boardStack[boardStack.length - 1]?.boardTitle ?? 'Board'}
+              theme={theme}
+              className={chromeClass}
+              onError={notify}
+            />
+          )}
+          <SettingsButton
+            open={settingsOpen}
+            onClick={() => setSettingsOpen(true)}
             className={chromeClass}
-            onError={notify}
           />
           <ThemeToggle className={chromeClass} />
         </div>
+      )}
+      {settingsOpen && !exportMode && (
+        <SettingsModal onClose={() => setSettingsOpen(false)} />
       )}
 
       <ReactFlow

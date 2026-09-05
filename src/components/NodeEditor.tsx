@@ -221,7 +221,7 @@ export default function NodeEditor({
 
   return (
     <aside
-      className="animate-panel-right fixed top-0 right-0 z-30 flex h-screen w-[400px] max-w-full flex-col border-l border-border bg-surface shadow-panel"
+      className="dk-sidebar-right animate-panel-right fixed top-0 right-0 z-30 flex h-screen w-[400px] max-w-full flex-col border-l border-border shadow-panel"
       aria-label="Node editor"
     >
       <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border pl-5 pr-3">

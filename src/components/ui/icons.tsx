@@ -157,3 +157,11 @@ export const DownloadIcon = (p: IconProps) => (
     <path d="M8 2.5v8.5M5 8.5l3 3 3-3M3 13.5h10" />
   </svg>
 )
+
+export const SettingsIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M2.5 5h11M2.5 11h11" />
+    <circle cx="6.25" cy="5" r="1.6" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="11" r="1.6" fill="currentColor" stroke="none" />
+  </svg>
+)

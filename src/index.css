@@ -17,6 +17,8 @@
   --overlay: oklch(0.235 0.009 65);
   --field: oklch(0.12 0.006 65);
   --chrome: oklch(0.17 0.007 65 / 0.92);
+  --sidebar-left-opacity: 1;
+  --sidebar-right-opacity: 1;
 
   --border: oklch(0.96 0.01 75 / 0.085);
   --border-strong: oklch(0.96 0.01 75 / 0.18);
@@ -264,6 +266,82 @@
 
 .react-flow__attribution a {
   color: inherit;
+}
+
+.dk-sidebar-left {
+  background: color-mix(in oklch, var(--surface) calc(var(--sidebar-left-opacity) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc((1 - var(--sidebar-left-opacity)) * 16px));
+  backdrop-filter: blur(calc((1 - var(--sidebar-left-opacity)) * 16px));
+}
+
+.dk-sidebar-right {
+  background: color-mix(in oklch, var(--surface) calc(var(--sidebar-right-opacity) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc((1 - var(--sidebar-right-opacity)) * 16px));
+  backdrop-filter: blur(calc((1 - var(--sidebar-right-opacity)) * 16px));
+}
+
+.dk-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dk-slider:focus-visible {
+  outline: none;
+}
+
+.dk-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.dk-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.dk-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 99px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--slider-pct, 100%),
+    var(--border-strong) var(--slider-pct, 100%)
+  );
+}
+
+.dk-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--overlay);
+}
+
+.dk-slider::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--border-strong);
+}
+
+.dk-slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 99px;
+  background: var(--accent);
+}
+
+.dk-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--overlay);
 }
 
 [data-export] .react-flow__attribution,
