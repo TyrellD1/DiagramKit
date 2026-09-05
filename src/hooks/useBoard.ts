@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { MarkerType, type Node, type Edge } from '@xyflow/react'
 import { api } from '@/lib/api'
 import { targetHandleId, parseHandleId } from '@/lib/connect'
-import type { AtreidesNodeData, BoardDocument, BoardNode, ReferenceLink } from '@/types'
+import type { AtreidesNodeData, BoardDocument, BoardHistoryView, BoardNode, ReferenceLink } from '@/types'
 import { normalizeCardBorderStyle, normalizeCardColor } from '@/lib/cardStyle'
 
 function toFlowNodes(board: BoardDocument): Node<AtreidesNodeData>[] {
@@ -49,6 +49,12 @@ export function useBoard(boardId: string | null) {
   const [error, setError] = useState<string | null>(null)
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  const [history, setHistory] = useState<BoardHistoryView>({
+    undoSteps: 0,
+    redoSteps: 0,
+    undo: [],
+    redo: [],
+  })
   const boardRef = useRef<BoardDocument | null>(null)
   const writeQueue = useRef(Promise.resolve())
 
@@ -61,9 +67,10 @@ export function useBoard(boardId: string | null) {
 
   const refreshHistory = useCallback(async (id: string) => {
     try {
-      const counts = await api.getBoardHistory(id)
-      setCanUndo(counts.undoSteps > 0)
-      setCanRedo(counts.redoSteps > 0)
+      const view = await api.getBoardHistory(id)
+      setHistory(view)
+      setCanUndo(view.undoSteps > 0)
+      setCanRedo(view.redoSteps > 0)
     } catch {
       // ignore
     }
@@ -248,5 +255,10 @@ export function useBoard(boardId: string | null) {
     redo,
     canUndo,
     canRedo,
+    history,
+    refreshHistory: () => {
+      const id = boardRef.current?.id
+      if (id) return refreshHistory(id)
+    },
   }
 }

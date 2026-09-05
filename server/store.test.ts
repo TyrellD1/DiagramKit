@@ -186,6 +186,27 @@ describe('json board store', () => {
     await expect(redoBoard(original.id)).rejects.toThrow('Nothing to redo')
   })
 
+  test('tags saves as CLI by default and UI when asked', async () => {
+    const workspace = await listWorkspace()
+    const board = await readBoard(workspace.rootBoardId)
+    await saveBoard({ ...board, title: 'CLI' })
+    await saveBoard({ ...board, title: 'UI' }, 'ui')
+    const history = await getBoardHistory(board.id)
+    expect(history.undo.map(s => s.source)).toEqual(['cli', 'ui'])
+    expect(history.undo[0].title).toBe('Home')
+    expect(history.undo[1].title).toBe('CLI')
+  })
+
+  test('does not coalesce UI and CLI edits', async () => {
+    const workspace = await listWorkspace()
+    const board = await readBoard(workspace.rootBoardId)
+    await saveBoard({ ...board, title: 'A' }, 'cli')
+    await saveBoard({ ...board, title: 'B' }, 'ui')
+    const history = await getBoardHistory(board.id)
+    expect(history.undoSteps).toBe(2)
+    expect(history.undo.map(s => s.source)).toEqual(['cli', 'ui'])
+  })
+
   test('rapid saves coalesce into one undo step', async () => {
     const workspace = await listWorkspace()
     const board = await readBoard(workspace.rootBoardId)

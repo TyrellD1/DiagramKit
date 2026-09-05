@@ -5,7 +5,7 @@ description: How to create and update DiagramKit boards and switch workspaces vi
 
 # Create and update DiagramKit boards
 
-Prefer the CLI to create, open, and validate workspaces (`agent-skills/diagramkit-cli`). Prefer the HTTP API for board reads/writes while the app is running. Direct file writes are fine for bulk edits; keep JSON valid and write atomically. Direct file writes do not record undo history. Use `PUT /api/boards/:id` (or the UI) if the change should be undoable.
+Prefer the CLI to create, open, and validate workspaces (`agent-skills/diagramkit-cli`). Prefer the HTTP API for board reads/writes while the app is running. Direct file writes are fine for bulk edits; keep JSON valid and write atomically. Direct file writes do not record undo history. Use `PUT /api/boards/:id` (or the UI) if the change should be undoable. The UI sends `X-DiagramKit-Source: ui`. Agents and curl are tagged `cli` unless they set that header (or `?source=ui`).
 
 **Agents:** do not write boards in `~/.diagramkit` or `~/diagram-kit`. Attach `~/.diagram-kit-local1` (and `local2` if needed) first. See `AGENTS.md`.
 
@@ -41,8 +41,8 @@ Base: `http://127.0.0.1:3001/api` (or `/api` from the Vite origin).
 | GET | `/boards` | | `{ rootBoardId, boards: [{ id, title, parentId }] }` |
 | POST | `/boards` | `{ title }` | Creates empty board file + index row |
 | GET | `/boards/:id` | | Full `BoardDocument` |
-| PUT | `/boards/:id` | Full `BoardDocument` | `body.id` must match URL. Replaces the file. Records an undo step (rapid saves within 1s coalesce). |
-| GET | `/boards/:id/history` | | `{ undoSteps, redoSteps }` |
+| PUT | `/boards/:id` | Full `BoardDocument` | `body.id` must match URL. Replaces the file. Records an undo step tagged `ui` or `cli` (`X-DiagramKit-Source` header or `?source=`; missing means `cli`). Rapid same-source saves within 1s coalesce. |
+| GET | `/boards/:id/history` | | `{ undoSteps, redoSteps, undo[], redo[] }` summaries (`source`, `at`, `title`, node/edge counts). Not the full boards. |
 | POST | `/boards/:id/undo` | | Restores the previous saved board. 409 if nothing to undo. |
 | POST | `/boards/:id/redo` | | Reapplies a undone save. 409 if nothing to redo. |
 | POST | `/boards/:id/export?theme=light\|dark&children=1\|0` | | Zip of PNGs for this board and nested `enterBoardId` children (`children=0` → one PNG). Playwright. Slow. |

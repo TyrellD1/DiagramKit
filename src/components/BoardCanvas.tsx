@@ -29,6 +29,7 @@ import EdgeContextMenu from './EdgeContextMenu'
 import ThemeToggle from './ThemeToggle'
 import ExportButton from './ExportButton'
 import SettingsModal, { SettingsButton } from './SettingsModal'
+import HistoryModal from './HistoryModal'
 import { Toast, useToast } from './Toast'
 import { Kbd, chromeClass } from './ui/controls'
 import { useBoard } from '@/hooks/useBoard'
@@ -163,6 +164,8 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
     redo,
     canUndo,
     canRedo,
+    history,
+    refreshHistory,
   } = useBoard(currentBoardId)
   const { toast, notify } = useToast()
   const { executeAction } = useNodeActions({ pushBoard, notify })
@@ -198,6 +201,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen)
   const [createDialogPos, setCreateDialogPos] = useState<{ x: number; y: number } | null>(null)
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit')
@@ -487,6 +491,15 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
       {settingsOpen && !exportMode && (
         <SettingsModal onClose={() => setSettingsOpen(false)} />
       )}
+      {historyOpen && !exportMode && (
+        <HistoryModal
+          history={history}
+          currentTitle={board?.title ?? 'Board'}
+          currentNodeCount={board?.nodes.length ?? 0}
+          currentEdgeCount={board?.edges.length ?? 0}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
 
       <ReactFlow
         key={currentBoardId}
@@ -521,8 +534,15 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
             onModeChange={setInteractionMode}
             canUndo={canUndo}
             canRedo={canRedo}
+            undoSource={history.undo.at(-1)?.source}
+            redoSource={history.redo.at(-1)?.source}
+            historyOpen={historyOpen}
             onUndo={() => void undo()}
             onRedo={() => void redo()}
+            onOpenHistory={() => {
+              setHistoryOpen(true)
+              void refreshHistory()
+            }}
           />
         )}
         <FitViewOnBoard boardId={currentBoardId} instant={exportMode} empty={isEmpty} />

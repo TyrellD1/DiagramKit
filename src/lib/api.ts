@@ -1,4 +1,6 @@
-import type { BoardDocument, WorkspaceIndex, WorkspaceList } from '@/types'
+import type { BoardDocument, BoardHistoryView, WorkspaceIndex, WorkspaceList } from '@/types'
+
+const UI_SOURCE = { 'X-DiagramKit-Source': 'ui' }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
@@ -41,13 +43,14 @@ export const api = {
     request<BoardDocument>(`/boards/${board.id}`, {
       method: 'PUT',
       body: JSON.stringify(board),
+      headers: UI_SOURCE,
     }),
   getBoardHistory: (id: string) =>
-    request<{ undoSteps: number; redoSteps: number }>(`/boards/${id}/history`),
+    request<BoardHistoryView>(`/boards/${id}/history`),
   undoBoard: (id: string) =>
-    request<BoardDocument>(`/boards/${id}/undo`, { method: 'POST' }),
+    request<BoardDocument>(`/boards/${id}/undo`, { method: 'POST', headers: UI_SOURCE }),
   redoBoard: (id: string) =>
-    request<BoardDocument>(`/boards/${id}/redo`, { method: 'POST' }),
+    request<BoardDocument>(`/boards/${id}/redo`, { method: 'POST', headers: UI_SOURCE }),
   createBoard: (data: { title: string }) =>
     request<BoardDocument>('/boards', {
       method: 'POST',

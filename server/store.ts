@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import type {
   BoardDocument,
+  EditSource,
   StoredIndex,
   WorkspaceIndex,
   WorkspaceList,
@@ -14,7 +15,7 @@ import type { JsonObject } from '../migrations/types.ts'
 import {
   boardsAreEqual,
   emptyHistory,
-  historyCounts,
+  historyView,
   normalizeHistory,
   recordEdit,
   redoEdit,
@@ -372,7 +373,7 @@ export async function readBoard(id: string): Promise<BoardDocument> {
   }
 }
 
-export async function saveBoard(board: BoardDocument): Promise<BoardDocument> {
+export async function saveBoard(board: BoardDocument, source: EditSource = 'cli'): Promise<BoardDocument> {
   await ensureSeed()
   const index = await readIndex()
   const known = index.boards.some(b => b.id === board.id)
@@ -389,7 +390,7 @@ export async function saveBoard(board: BoardDocument): Promise<BoardDocument> {
 
   if (!previous || !boardsAreEqual(previous, next)) {
     if (previous) {
-      const history = recordEdit(await readHistory(next.id), previous, Date.now())
+      const history = recordEdit(await readHistory(next.id), previous, Date.now(), source)
       await writeHistory(next.id, history)
     }
     await writeJsonAtomic(boardPath(next.id), next)
@@ -405,7 +406,7 @@ export async function getBoardHistory(id: string) {
   await ensureSeed()
   const index = await readIndex()
   if (!index.boards.some(b => b.id === id)) fail('Board not found', 404)
-  return historyCounts(await readHistory(id))
+  return historyView(await readHistory(id))
 }
 
 export async function undoBoard(id: string): Promise<BoardDocument> {

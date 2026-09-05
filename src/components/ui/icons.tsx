@@ -179,3 +179,10 @@ export const RedoIcon = (p: IconProps) => (
     <path d="M9 4.5L11.5 7.5 9 10.5" />
   </svg>
 )
+
+export const HistoryIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="8" cy="8" r="5.5" />
+    <path d="M8 5v3.5l2.25 1.25" />
+  </svg>
+)

@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { Panel, useReactFlow, useViewport } from '@xyflow/react'
 import { chromeClass } from './ui/controls'
-import { HandIcon, PencilIcon, RedoIcon, UndoIcon } from './ui/icons'
+import { HandIcon, HistoryIcon, PencilIcon, RedoIcon, UndoIcon } from './ui/icons'
 import { cn } from '@/lib/cn'
 import { isTypingTarget } from '@/lib/keyboard'
+import type { HistorySource } from '@/types'
 
 export type InteractionMode = 'edit' | 'navigate'
 
@@ -15,8 +16,12 @@ interface Props {
   onModeChange: (mode: InteractionMode) => void
   canUndo?: boolean
   canRedo?: boolean
+  undoSource?: HistorySource
+  redoSource?: HistorySource
+  historyOpen?: boolean
   onUndo?: () => void
   onRedo?: () => void
+  onOpenHistory?: () => void
 }
 
 function isTyping(target: EventTarget | null) {
@@ -30,11 +35,28 @@ const toolClass =
   'flex h-7 min-w-7 items-center justify-center rounded-md border-none bg-transparent px-1.5 text-muted cursor-pointer ' +
   'transition-colors duration-150 hover:bg-elevated hover:text-text disabled:opacity-35 disabled:hover:bg-transparent disabled:cursor-default'
 
+function sourceSuffix(source?: HistorySource) {
+  if (source === 'ui') return ' · UI'
+  if (source === 'cli') return ' · CLI'
+  return ''
+}
+
 /*
   One toolbar for the canvas: mode on the left, zoom on the right. Keyboard:
   V (edit), H (pan), and the usual zoom shortcuts via React Flow.
 */
-export default function CanvasToolbar({ mode, onModeChange, canUndo, canRedo, onUndo, onRedo }: Props) {
+export default function CanvasToolbar({
+  mode,
+  onModeChange,
+  canUndo,
+  canRedo,
+  undoSource,
+  redoSource,
+  historyOpen,
+  onUndo,
+  onRedo,
+  onOpenHistory,
+}: Props) {
   const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow()
   const { zoom } = useViewport()
 
@@ -83,10 +105,21 @@ export default function CanvasToolbar({ mode, onModeChange, canUndo, canRedo, on
         <div className="flex items-center gap-0.5">
           <button
             type="button"
+            className={cn(toolClass, historyOpen && 'bg-elevated text-text')}
+            onClick={onOpenHistory}
+            title="History"
+            aria-label="History"
+            aria-haspopup="dialog"
+            aria-expanded={historyOpen}
+          >
+            <HistoryIcon size={14} />
+          </button>
+          <button
+            type="button"
             className={toolClass}
             onClick={onUndo}
             disabled={!canUndo}
-            title="Undo (⌘Z)"
+            title={`Undo (⌘Z)${canUndo ? sourceSuffix(undoSource) : ''}`}
             aria-label="Undo"
           >
             <UndoIcon size={14} />
@@ -96,7 +129,7 @@ export default function CanvasToolbar({ mode, onModeChange, canUndo, canRedo, on
             className={toolClass}
             onClick={onRedo}
             disabled={!canRedo}
-            title="Redo (⇧⌘Z)"
+            title={`Redo (⇧⌘Z)${canRedo ? sourceSuffix(redoSource) : ''}`}
             aria-label="Redo"
           >
             <RedoIcon size={14} />

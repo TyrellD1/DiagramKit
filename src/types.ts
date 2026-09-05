@@ -47,6 +47,26 @@ export interface BoardDocument {
   edges: BoardEdge[]
 }
 
+/** Who made a saved edit. Missing header/query on PUT is treated as CLI. */
+export type EditSource = 'ui' | 'cli'
+/** `unknown` is a legacy unwrapped snapshot in `.history.json`. */
+export type HistorySource = EditSource | 'unknown'
+
+export interface HistoryStepSummary {
+  source: HistorySource
+  at: number
+  title: string
+  nodeCount: number
+  edgeCount: number
+}
+
+export interface BoardHistoryView {
+  undoSteps: number
+  redoSteps: number
+  undo: HistoryStepSummary[]
+  redo: HistoryStepSummary[]
+}
+
 export interface BoardSummary {
   id: string
   title: string

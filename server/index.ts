@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import type { BoardDocument } from '../src/types.ts'
+import { parseEditSource } from './boardHistory.ts'
 import {
   attachWorkspace,
   createBoard,
@@ -106,7 +107,8 @@ api.put('/boards/:id', async (c) => {
     return c.json({ error: 'Invalid board document' }, 400)
   }
   try {
-    return c.json(await saveBoard(body))
+    const source = parseEditSource(c.req.header('x-diagramkit-source') ?? c.req.query('source'))
+    return c.json(await saveBoard(body, source))
   } catch (err) {
     const status = statusOf(err)
     return c.json({ error: (err as Error).message }, status === 404 ? 404 : 500)
