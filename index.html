@@ -24,15 +24,18 @@
             document.documentElement.setAttribute('data-export', '1')
           }
           var t = params.get('theme')
-          if (t !== 'light' && t !== 'dark') {
+          if (t !== 'light' && t !== 'dark' && t !== 'light-gray' && t !== 'dark-gray') {
             t = localStorage.getItem('diagramkit-theme')
           }
-          if (t !== 'light' && t !== 'dark') {
+          if (t !== 'light' && t !== 'dark' && t !== 'light-gray' && t !== 'dark-gray') {
             t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
           }
           document.documentElement.setAttribute('data-theme', t)
           var meta = document.querySelector('meta[name="theme-color"]')
-          if (meta) meta.setAttribute('content', t === 'light' ? '#f3eee6' : '#211f1c')
+          if (meta) {
+            var colors = { light: '#f3eee6', dark: '#211f1c', 'light-gray': '#f4f4f4', 'dark-gray': '#1c1c1c' }
+            meta.setAttribute('content', colors[t] || '#211f1c')
+          }
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark')
         }

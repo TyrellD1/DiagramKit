@@ -1,13 +1,10 @@
+import { parseTheme, type Theme } from '../theme/themes'
+
 export interface AppRoute {
   workspaceId: string | null
   boardId: string | null
   exportMode: boolean
-  theme: 'light' | 'dark' | null
-}
-
-function parseTheme(value: string | null): 'light' | 'dark' | null {
-  if (value === 'light' || value === 'dark') return value
-  return null
+  theme: Theme | null
 }
 
 export function parseAppRoute(search: string): AppRoute {
@@ -24,7 +21,7 @@ export function readAppRoute(): AppRoute {
 }
 
 export function appRouteHref(
-  next: { workspaceId: string; boardId: string; exportMode?: boolean; theme?: 'light' | 'dark' | null },
+  next: { workspaceId: string; boardId: string; exportMode?: boolean; theme?: Theme | null },
   currentHref = typeof window !== 'undefined' ? window.location.href : 'http://local/',
 ): string {
   const url = new URL(currentHref)
@@ -41,7 +38,7 @@ export function appRouteHref(
 }
 
 export function writeAppRoute(
-  next: { workspaceId: string; boardId: string; exportMode?: boolean; theme?: 'light' | 'dark' | null },
+  next: { workspaceId: string; boardId: string; exportMode?: boolean; theme?: Theme | null },
   mode: 'push' | 'replace',
 ) {
   const href = appRouteHref(next)
@@ -68,7 +65,7 @@ export function exportPageUrl(opts: {
   origin: string
   workspaceId: string
   boardId: string
-  theme: 'light' | 'dark'
+  theme: Theme
 }): string {
   const url = new URL('/', opts.origin)
   url.searchParams.set('workspace', opts.workspaceId)

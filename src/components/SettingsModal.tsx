@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Button, Field, TextInput } from './ui/controls'
+import { Button, Field, Select, TextInput } from './ui/controls'
 import { CloseIcon, SettingsIcon } from './ui/icons'
 import { useSettings } from '@/settings/SettingsProvider'
 import { parseOpacity } from '@/lib/settings'
+import { THEME_LABEL, THEMES, useTheme, type Theme } from '@/theme/ThemeProvider'
 
 export function SettingsButton({
   open,
@@ -33,6 +34,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const { settings, setSidebarLeftOpacity, setSidebarRightOpacity } = useSettings()
+  const { theme, setTheme } = useTheme()
+  const themeId = useId()
 
   useEffect(() => {
     dialogRef.current?.focus()
@@ -63,7 +66,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="animate-pop absolute left-1/2 top-[18%] w-[min(100%-2rem,20rem)] rounded-lg border border-border bg-overlay p-4 shadow-menu outline-none"
+        className="animate-pop absolute left-1/2 top-[18%] w-[min(100%-2rem,22rem)] rounded-lg border border-border bg-overlay p-4 shadow-menu outline-none"
         style={{ ['--pop-x' as string]: '-50%', ['--pop-y' as string]: '0%' }}
       >
         <header className="mb-4 flex items-center justify-between gap-3">
@@ -76,6 +79,17 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         </header>
 
         <div className="flex flex-col gap-4">
+          <Field label="Theme" htmlFor={themeId}>
+            <Select
+              id={themeId}
+              value={theme}
+              onChange={e => setTheme(e.target.value as Theme)}
+            >
+              {THEMES.map(id => (
+                <option key={id} value={id}>{THEME_LABEL[id]}</option>
+              ))}
+            </Select>
+          </Field>
           <OpacityField
             label="Boards sidebar"
             value={settings.sidebarLeftOpacity}

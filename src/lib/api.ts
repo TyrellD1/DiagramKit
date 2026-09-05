@@ -1,4 +1,5 @@
 import type { BoardDocument, BoardHistoryView, WorkspaceIndex, WorkspaceList } from '@/types'
+import type { Theme } from '@/theme/themes'
 
 const UI_SOURCE = { 'X-DiagramKit-Source': 'ui' }
 
@@ -71,7 +72,7 @@ export const api = {
     }),
   detachWorkspace: (id: string) =>
     request<WorkspaceList>(`/workspaces/${id}`, { method: 'DELETE' }),
-  exportBoard: async (id: string, theme: 'light' | 'dark', opts?: { children?: boolean }) => {
+  exportBoard: async (id: string, theme: Theme, opts?: { children?: boolean }) => {
     const children = opts?.children !== false
     const res = await fetch(
       `/api/boards/${encodeURIComponent(id)}/export?theme=${theme}&children=${children ? '1' : '0'}`,

@@ -13,6 +13,7 @@ import { validateWorkspace } from './schema.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { resolveBoardRef, zipBasename, pngBasename } from '../src/lib/exportTree.ts'
+import { isTheme } from '../src/theme/themes.ts'
 import {
   apiUrl,
   DEFAULT_HOST,
@@ -234,10 +235,10 @@ async function ensureApi(flags: CliFlags): Promise<string> {
 
 async function cmdExport(args: string[], flags: CliFlags) {
   if (args.length > 1) die(`unexpected extra arguments: ${args.slice(1).join(' ')}`)
-  if (flags.theme && flags.theme !== 'light' && flags.theme !== 'dark') {
-    die(`invalid --theme ${flags.theme} (expected light or dark)`)
+  if (flags.theme && !isTheme(flags.theme)) {
+    die(`invalid --theme ${flags.theme} (expected light, dark, light-gray, or dark-gray)`)
   }
-  const theme = flags.theme === 'dark' ? 'dark' : 'light'
+  const theme = isTheme(flags.theme) ? flags.theme : 'light'
   const children = !flags.noChildren
   const base = await ensureApi(flags)
 

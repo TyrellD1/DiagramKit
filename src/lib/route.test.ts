@@ -11,12 +11,12 @@ describe('app route', () => {
     })
   })
 
-  test('reads export and theme flags', () => {
-    expect(parseAppRoute('?board=abc&export=1&theme=light')).toEqual({
+  test('reads export and grayscale theme flags', () => {
+    expect(parseAppRoute('?board=abc&export=1&theme=dark-gray')).toEqual({
       workspaceId: null,
       boardId: 'abc',
       exportMode: true,
-      theme: 'light',
+      theme: 'dark-gray',
     })
   })
 

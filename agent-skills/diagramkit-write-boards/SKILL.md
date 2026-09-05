@@ -46,7 +46,7 @@ Base: `http://127.0.0.1:3001/api` (or `/api` from the Vite origin).
 | GET | `/boards/:id/history` | | `{ undoSteps, redoSteps, undo[], redo[] }` summaries (`source`, `at`, `title`, node/edge counts). Not the full boards. |
 | POST | `/boards/:id/undo` | | Restores the previous saved board. 409 if nothing to undo. |
 | POST | `/boards/:id/redo` | | Reapplies a undone save. 409 if nothing to redo. |
-| POST | `/boards/:id/export?theme=light\|dark&children=1\|0` | | Zip of PNGs for this board and nested `enterBoardId` children (`children=0` → one PNG). Playwright. Slow. |
+| POST | `/boards/:id/export?theme=light\|dark\|light-gray\|dark-gray&children=1\|0` | | Zip of PNGs for this board and nested `enterBoardId` children (`children=0` → one PNG). Playwright. Slow. |
 
 There are no row-level node/edge endpoints. Load the board, mutate `nodes`/`edges` in memory, PUT the whole document. Include `schemaVersion` (currently `2`). Missing version is treated as `0` and migrated on read/write.
 

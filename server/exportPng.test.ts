@@ -19,6 +19,8 @@ describe('uiOriginCandidates', () => {
 test('parseExportTheme defaults to light', () => {
   expect(parseExportTheme('dark')).toBe('dark')
   expect(parseExportTheme('light')).toBe('light')
+  expect(parseExportTheme('light-gray')).toBe('light-gray')
+  expect(parseExportTheme('dark-gray')).toBe('dark-gray')
   expect(parseExportTheme('nope')).toBe('light')
   expect(parseExportTheme(undefined)).toBe('light')
 })

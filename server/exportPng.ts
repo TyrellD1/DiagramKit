@@ -2,9 +2,10 @@ import JSZip from 'jszip'
 import { chromium, type Browser } from 'playwright'
 import { namedBoardTree, resolveBoardRef, zipBasename } from '../src/lib/exportTree.ts'
 import { activeWorkspaceId, exportPageUrl } from '../src/lib/route.ts'
+import { colorModeOf, isTheme, type Theme } from '../src/theme/themes.ts'
 import { listAttachedWorkspaces, listWorkspace } from './store.ts'
 
-export type ExportTheme = 'light' | 'dark'
+export type ExportTheme = Theme
 
 export interface ExportPng {
   filename: string
@@ -74,7 +75,7 @@ async function runExport(opts: {
   port?: number
   webPort?: number
 }): Promise<ExportResult> {
-  const theme: ExportTheme = opts.theme === 'dark' ? 'dark' : 'light'
+  const theme: ExportTheme = isTheme(opts.theme) ? opts.theme : 'light'
   const children = opts.children !== false
   const index = await listWorkspace()
   const root = resolveBoardRef(index, opts.boardId)
@@ -104,7 +105,7 @@ async function runExport(opts: {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       deviceScaleFactor: 2,
-      colorScheme: theme,
+      colorScheme: colorModeOf(theme),
     })
     await context.addInitScript((next: ExportTheme) => {
       try {
@@ -166,7 +167,7 @@ export async function zipExport(result: ExportResult): Promise<Buffer> {
 }
 
 export function parseExportTheme(value: string | null | undefined): ExportTheme {
-  return value === 'dark' ? 'dark' : 'light'
+  return isTheme(value) ? value : 'light'
 }
 
 export function parseExportChildren(value: string | null | undefined): boolean {

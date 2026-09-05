@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { THEME_COLOR, isTheme, parseTheme, toggleTheme, type Theme } from './themes'
 
-export type Theme = 'light' | 'dark'
+export type { Theme }
+export { THEME_LABEL, THEMES, colorModeOf, isTheme, parseTheme, toggleTheme } from './themes'
 
 const STORAGE_KEY = 'diagramkit-theme'
 
@@ -14,12 +16,12 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 function readStoredTheme(): Theme {
   if (typeof window !== 'undefined') {
-    const fromUrl = new URLSearchParams(window.location.search).get('theme')
-    if (fromUrl === 'light' || fromUrl === 'dark') return fromUrl
+    const fromUrl = parseTheme(new URLSearchParams(window.location.search).get('theme'))
+    if (fromUrl) return fromUrl
   }
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'light' || stored === 'dark') return stored
+    if (isTheme(stored)) return stored
   } catch {
     // ignore
   }
@@ -28,11 +30,6 @@ function readStoredTheme(): Theme {
   }
   return 'dark'
 }
-
-const THEME_COLOR = {
-  light: '#f3eee6',
-  dark: '#211f1c',
-} as const
 
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme)
@@ -62,7 +59,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const toggle = useCallback(() => {
-    const next: Theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+    const current = parseTheme(document.documentElement.getAttribute('data-theme')) ?? 'dark'
+    const next = toggleTheme(current)
     applyTheme(next)
     setThemeState(next)
   }, [])

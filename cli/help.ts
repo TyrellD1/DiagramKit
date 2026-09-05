@@ -162,7 +162,7 @@ With children, writes a zip of PNGs named from board titles
 Options:
       --out <path>     Zip file (*.zip), a PNG, or a directory of PNGs
                        (default: <board>-export.zip, or <board>.png with --no-children)
-      --theme <name>   light (default) or dark
+      --theme <name>   light (default), dark, light-gray, or dark-gray
       --no-children    Only the named board, not nested pages
   -p, --port <n>       API port if starting a server (default 3001)
       --web-port <n>   Vite UI port in --dev (default 5173)

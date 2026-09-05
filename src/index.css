@@ -104,6 +104,100 @@
   color-scheme: light;
 }
 
+[data-theme="dark-gray"] {
+  --canvas: oklch(0.135 0 0);
+  --surface: oklch(0.17 0 0);
+  --elevated: oklch(0.205 0 0);
+  --overlay: oklch(0.235 0 0);
+  --field: oklch(0.12 0 0);
+  --chrome: oklch(0.17 0 0 / 0.92);
+  --sidebar-left-opacity: 1;
+  --sidebar-right-opacity: 1;
+
+  --border: oklch(0.96 0 0 / 0.085);
+  --border-strong: oklch(0.96 0 0 / 0.18);
+
+  --text: oklch(0.93 0 0);
+  --muted: oklch(0.70 0 0);
+  --faint: oklch(0.52 0 0);
+
+  --ink: oklch(0.93 0 0);
+  --ink-fg: oklch(0.15 0 0);
+
+  --accent: oklch(0.82 0 0);
+  --accent-fg: oklch(0.18 0 0);
+  --accent-soft: oklch(0.82 0 0 / 0.14);
+  --accent-ring: oklch(0.82 0 0 / 0.42);
+
+  --danger: oklch(0.72 0.04 25);
+  --danger-soft: oklch(0.72 0.04 25 / 0.14);
+
+  --grid: oklch(0.29 0 0);
+  --edge: oklch(0.46 0 0);
+  --edge-hover: oklch(0.66 0 0);
+  --minimap-mask: oklch(0.10 0 0 / 0.72);
+
+  --card-red: oklch(0.20 0 0);
+  --card-red-edge: oklch(0.72 0 0 / 0.45);
+  --card-yellow: oklch(0.33 0 0);
+  --card-yellow-edge: oklch(0.78 0 0 / 0.42);
+  --card-blue: oklch(0.26 0 0);
+  --card-blue-edge: oklch(0.70 0 0 / 0.45);
+
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 24px -12px oklch(0 0 0 / 0.5);
+  --shadow-card-hover: 0 1px 2px oklch(0 0 0 / 0.4), 0 14px 36px -14px oklch(0 0 0 / 0.65);
+  --shadow-chrome: 0 1px 2px oklch(0 0 0 / 0.4), 0 12px 32px -12px oklch(0 0 0 / 0.6);
+  --shadow-panel: -12px 0 40px -20px oklch(0 0 0 / 0.6);
+  --shadow-menu: 0 2px 6px oklch(0 0 0 / 0.4), 0 18px 48px -16px oklch(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
+[data-theme="light-gray"] {
+  --canvas: oklch(0.962 0 0);
+  --surface: oklch(0.985 0 0);
+  --elevated: oklch(0.945 0 0);
+  --overlay: oklch(0.995 0 0);
+  --field: oklch(0.998 0 0);
+  --chrome: oklch(0.985 0 0 / 0.92);
+
+  --border: oklch(0.30 0 0 / 0.10);
+  --border-strong: oklch(0.30 0 0 / 0.22);
+
+  --text: oklch(0.22 0 0);
+  --muted: oklch(0.47 0 0);
+  --faint: oklch(0.63 0 0);
+
+  --ink: oklch(0.22 0 0);
+  --ink-fg: oklch(0.985 0 0);
+
+  --accent: oklch(0.38 0 0);
+  --accent-fg: oklch(0.985 0 0);
+  --accent-soft: oklch(0.38 0 0 / 0.12);
+  --accent-ring: oklch(0.38 0 0 / 0.35);
+
+  --danger: oklch(0.55 0.05 25);
+  --danger-soft: oklch(0.55 0.05 25 / 0.10);
+
+  --grid: oklch(0.86 0 0);
+  --edge: oklch(0.66 0 0);
+  --edge-hover: oklch(0.42 0 0);
+  --minimap-mask: oklch(0.96 0 0 / 0.72);
+
+  --card-red: oklch(0.93 0 0);
+  --card-red-edge: oklch(0.42 0 0 / 0.22);
+  --card-yellow: oklch(0.99 0 0);
+  --card-yellow-edge: oklch(0.52 0 0 / 0.20);
+  --card-blue: oklch(0.955 0 0);
+  --card-blue-edge: oklch(0.46 0 0 / 0.20);
+
+  --shadow-card: 0 1px 2px oklch(0.3 0 0 / 0.06), 0 8px 24px -12px oklch(0.3 0 0 / 0.18);
+  --shadow-card-hover: 0 1px 2px oklch(0.3 0 0 / 0.08), 0 14px 36px -14px oklch(0.3 0 0 / 0.28);
+  --shadow-chrome: 0 1px 2px oklch(0.3 0 0 / 0.06), 0 12px 32px -12px oklch(0.3 0 0 / 0.22);
+  --shadow-panel: -12px 0 40px -20px oklch(0.3 0 0 / 0.25);
+  --shadow-menu: 0 2px 6px oklch(0.3 0 0 / 0.08), 0 18px 48px -16px oklch(0.3 0 0 / 0.3);
+  color-scheme: light;
+}
+
 @layer base {
   html,
   body,

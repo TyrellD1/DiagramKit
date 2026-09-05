@@ -1,10 +1,10 @@
 import { Button } from './ui/controls'
 import { MoonIcon, SunIcon } from './ui/icons'
-import { useTheme } from '@/theme/ThemeProvider'
+import { colorModeOf, useTheme } from '@/theme/ThemeProvider'
 
 export default function ThemeToggle({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' }) {
   const { theme, toggle } = useTheme()
-  const isDark = theme === 'dark'
+  const isDark = colorModeOf(theme) === 'dark'
 
   return (
     <Button

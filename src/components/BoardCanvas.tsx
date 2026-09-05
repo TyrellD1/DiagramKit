@@ -35,7 +35,7 @@ import { Kbd, chromeClass } from './ui/controls'
 import { useBoard } from '@/hooks/useBoard'
 import { useBoardNavigation } from '@/hooks/useBoardNavigation'
 import { useNodeActions } from '@/hooks/useNodeActions'
-import { useTheme } from '@/theme/ThemeProvider'
+import { useTheme, colorModeOf } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
 import { isRedoKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
@@ -522,7 +522,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
         nodeTypes={nodeTypes}
         snapToGrid
         snapGrid={[20, 20]}
-        colorMode={theme}
+        colorMode={colorModeOf(theme)}
         deleteKeyCode={['Backspace', 'Delete']}
         {...interactionProps}
       >
