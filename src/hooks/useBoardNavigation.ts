@@ -16,6 +16,10 @@ export function useBoardNavigation(workspaceId: string, boards: WorkspaceIndex) 
   boardsRef.current = boards
   workspaceRef.current = workspaceId
 
+  useEffect(() => {
+    setBoardStack(boardPath(boards, currentRef.current))
+  }, [boards])
+
   const goToBoard = useCallback((
     boardId: string,
     opts?: { title?: string; history?: 'push' | 'replace' | false },

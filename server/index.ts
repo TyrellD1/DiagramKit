@@ -1,8 +1,10 @@
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
+import { streamSSE } from 'hono/streaming'
 import type { BoardDocument } from '../src/types.ts'
 import { parseEditSource } from './boardHistory.ts'
+import { publishLive, subscribeLive } from './events.ts'
 import {
   attachWorkspace,
   createBoard,
@@ -87,8 +89,14 @@ api.post('/boards', async (c) => {
   if (!body.title || !body.title.trim()) {
     return c.json({ error: 'title is required' }, 400)
   }
-  const board = await createBoard(body.title)
-  return c.json(board, 201)
+  try {
+    const board = await createBoard(body.title)
+    publishLive({ type: 'workspace' })
+    return c.json(board, 201)
+  } catch (err) {
+    const status = statusOf(err)
+    return c.json({ error: (err as Error).message }, status === 400 ? 400 : 500)
+  }
 })
 
 api.get('/boards/:id', async (c) => {
@@ -108,7 +116,9 @@ api.put('/boards/:id', async (c) => {
   }
   try {
     const source = parseEditSource(c.req.header('x-diagramkit-source') ?? c.req.query('source'))
-    return c.json(await saveBoard(body, source))
+    const saved = await saveBoard(body, source)
+    if (source === 'cli') publishLive({ type: 'board', id, source })
+    return c.json(saved)
   } catch (err) {
     const status = statusOf(err)
     return c.json({ error: (err as Error).message }, status === 404 ? 404 : 500)
@@ -124,9 +134,29 @@ api.get('/boards/:id/history', async (c) => {
   }
 })
 
+api.get('/events', (c) => {
+  return streamSSE(c, async (stream) => {
+    const unsub = subscribeLive((event) => {
+      void stream.writeSSE({ data: JSON.stringify(event) })
+    })
+    try {
+      while (true) {
+        await stream.writeSSE({ event: 'ping', data: '' })
+        await stream.sleep(15_000)
+      }
+    } finally {
+      unsub()
+    }
+  })
+})
+
 api.post('/boards/:id/undo', async (c) => {
   try {
-    return c.json(await undoBoard(c.req.param('id')))
+    const id = c.req.param('id')
+    const source = parseEditSource(c.req.header('x-diagramkit-source') ?? c.req.query('source'))
+    const restored = await undoBoard(id)
+    if (source === 'cli') publishLive({ type: 'board', id, source })
+    return c.json(restored)
   } catch (err) {
     const status = statusOf(err)
     return c.json({ error: (err as Error).message }, status === 404 ? 404 : status === 409 ? 409 : 500)
@@ -135,7 +165,11 @@ api.post('/boards/:id/undo', async (c) => {
 
 api.post('/boards/:id/redo', async (c) => {
   try {
-    return c.json(await redoBoard(c.req.param('id')))
+    const id = c.req.param('id')
+    const source = parseEditSource(c.req.header('x-diagramkit-source') ?? c.req.query('source'))
+    const restored = await redoBoard(id)
+    if (source === 'cli') publishLive({ type: 'board', id, source })
+    return c.json(restored)
   } catch (err) {
     const status = statusOf(err)
     return c.json({ error: (err as Error).message }, status === 404 ? 404 : status === 409 ? 409 : 500)
@@ -145,6 +179,7 @@ api.post('/boards/:id/redo', async (c) => {
 api.delete('/boards/:id', async (c) => {
   try {
     await deleteBoard(c.req.param('id'))
+    publishLive({ type: 'workspace' })
     return new Response(null, { status: 204 })
   } catch (err) {
     const status = statusOf(err)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import BoardCanvas from '@/components/BoardCanvas'
 import { api } from '@/lib/api'
+import { subscribeLiveEvents } from '@/lib/liveEvents'
 import { activeWorkspaceId, readAppRoute, resolveBoardId, writeAppRoute } from '@/lib/route'
 import type { WorkspaceIndex, WorkspaceList } from '@/types'
 
@@ -39,6 +40,18 @@ function App() {
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    return subscribeLiveEvents(event => {
+      if (event.type === 'board' && event.source !== 'cli') return
+      if (event.type === 'board' || event.type === 'workspace') {
+        void api.getWorkspace().then(setBoards).catch(() => {})
+      }
+      if (event.type === 'workspace') {
+        void api.listWorkspaces().then(setWorkspaces).catch(() => {})
+      }
+    })
+  }, [])
 
   useEffect(() => {
     const onPop = () => {

@@ -5,7 +5,7 @@ description: How to create and update DiagramKit boards and switch workspaces vi
 
 # Create and update DiagramKit boards
 
-Prefer the CLI to create, open, and validate workspaces (`agent-skills/diagramkit-cli`). Prefer the HTTP API for board reads/writes while the app is running. Direct file writes are fine for bulk edits; keep JSON valid and write atomically. Direct file writes do not record undo history. Use `PUT /api/boards/:id` (or the UI) if the change should be undoable. The UI sends `X-DiagramKit-Source: ui`. Agents and curl are tagged `cli` unless they set that header (or `?source=ui`).
+Prefer the CLI to create, open, and validate workspaces (`agent-skills/diagramkit-cli`). Prefer the HTTP API for board reads/writes while the app is running. Direct file writes are fine for bulk edits; keep JSON valid and write atomically. Direct file writes do not record undo history and do not update the open UI. Use `PUT /api/boards/:id` (or the UI) if the change should be undoable and visible live. The UI sends `X-DiagramKit-Source: ui`. Agents and curl are tagged `cli` unless they set that header (or `?source=ui`). CLI writes on the open board replace the canvas (agent wins if both write).
 
 **Agents:** do not write boards in `~/.diagramkit` or `~/diagram-kit`. Attach `~/.diagram-kit-local1` (and `local2` if needed) first. See `AGENTS.md`.
 
@@ -38,6 +38,7 @@ Base: `http://127.0.0.1:3001/api` (or `/api` from the Vite origin).
 
 | Method | Path | Body | Notes |
 |--------|------|------|--------|
+| GET | `/events` | | SSE. `{ type: "board", id, source }` on CLI `PUT`/`undo`/`redo`. `{ type: "workspace" }` on create/delete. The UI ignores `source: "ui"`. Direct file writes do not emit. |
 | GET | `/boards` | | `{ rootBoardId, boards: [{ id, title, parentId }] }` |
 | POST | `/boards` | `{ title }` | Creates empty board file + index row |
 | GET | `/boards/:id` | | Full `BoardDocument` |

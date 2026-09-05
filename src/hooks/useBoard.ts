@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MarkerType, type Node, type Edge } from '@xyflow/react'
 import { api } from '@/lib/api'
+import { subscribeLiveEvents } from '@/lib/liveEvents'
 import { targetHandleId, parseHandleId } from '@/lib/connect'
 import type { AtreidesNodeData, BoardDocument, BoardHistoryView, BoardNode, ReferenceLink } from '@/types'
 import { normalizeCardBorderStyle, normalizeCardColor } from '@/lib/cardStyle'
@@ -57,6 +58,7 @@ export function useBoard(boardId: string | null) {
   })
   const boardRef = useRef<BoardDocument | null>(null)
   const writeQueue = useRef(Promise.resolve())
+  const remoteEpoch = useRef(0)
 
   const applyLoaded = useCallback((doc: BoardDocument) => {
     boardRef.current = doc
@@ -76,6 +78,19 @@ export function useBoard(boardId: string | null) {
     }
   }, [])
 
+  const pullRemote = useCallback(async (id: string) => {
+    const epoch = ++remoteEpoch.current
+    try {
+      const doc = await api.getBoard(id)
+      if (epoch !== remoteEpoch.current) return
+      const same = boardRef.current && JSON.stringify(boardRef.current) === JSON.stringify(doc)
+      if (!same) applyLoaded(doc)
+      await refreshHistory(id)
+    } catch {
+      // ignore
+    }
+  }, [applyLoaded, refreshHistory])
+
   const persist = useCallback((next: BoardDocument, silent = false) => {
     boardRef.current = next
     if (!silent) {
@@ -83,14 +98,22 @@ export function useBoard(boardId: string | null) {
       setFlowNodes(toFlowNodes(next))
       setFlowEdges(toFlowEdges(next))
     }
+    const epoch = remoteEpoch.current
     writeQueue.current = writeQueue.current
-      .then(() => api.saveBoard(next))
-      .then(() => refreshHistory(next.id))
+      .then(async () => {
+        if (remoteEpoch.current !== epoch) return
+        await api.saveBoard(next)
+        if (remoteEpoch.current !== epoch) {
+          await pullRemote(next.id)
+          return
+        }
+        await refreshHistory(next.id)
+      })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Failed to save board')
       })
     return writeQueue.current
-  }, [refreshHistory])
+  }, [pullRemote, refreshHistory])
 
   const apply = useCallback((fn: (b: BoardDocument) => BoardDocument) => {
     const current = boardRef.current
@@ -128,6 +151,14 @@ export function useBoard(boardId: string | null) {
   useEffect(() => {
     if (boardId) load(boardId)
   }, [boardId, load])
+
+  useEffect(() => {
+    if (!boardId) return
+    return subscribeLiveEvents(event => {
+      if (event.type !== 'board' || event.source !== 'cli' || event.id !== boardId) return
+      void pullRemote(boardId)
+    })
+  }, [boardId, pullRemote])
 
   const updateNode = useCallback((nodeId: string, patch: Partial<BoardNode>) => {
     apply(b => ({

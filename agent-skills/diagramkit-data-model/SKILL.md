@@ -40,7 +40,7 @@ The default workspace cannot be detached. User boards in `~/.diagramkit/boards` 
 
 Writes are atomic: temp file next to the target, then `rename`.
 
-Each board may have `boards/<id>.history.json` (undo/redo stacks). The server writes it on `PUT` (and on undo/redo). Each step is `{ board, source: "ui" | "cli" | "unknown", at }`. Legacy files that stored bare boards are read as `source: "unknown"`. Direct file edits do not get a history step. `diagramkit validate` ignores these sidecars. The UI history modal lists only these stacks.
+Each board may have `boards/<id>.history.json` (undo/redo stacks). The server writes it on `PUT` (and on undo/redo). Each step is `{ board, source: "ui" | "cli" | "unknown", at }`. Legacy files that stored bare boards are read as `source: "unknown"`. Direct file edits do not get a history step and do not notify the UI. `diagramkit validate` ignores these sidecars. The UI history modal lists only these stacks. Open tabs subscribe to `GET /api/events` and reload a board when a CLI write lands.
 
 `parentId` is **not** stored. The sidebar tree is derived by scanning the active workspace's boards for `node.enterBoardId`.
 

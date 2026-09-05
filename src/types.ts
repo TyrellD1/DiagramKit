@@ -67,6 +67,11 @@ export interface BoardHistoryView {
   redo: HistoryStepSummary[]
 }
 
+/** Server-sent event. The UI reloads a board only when `source` is `cli`. */
+export type LiveEvent =
+  | { type: 'board'; id: string; source: EditSource }
+  | { type: 'workspace' }
+
 export interface BoardSummary {
   id: string
   title: string

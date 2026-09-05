@@ -13,7 +13,17 @@ export default defineConfig({
     host: true,
     port: Number(process.env.WEB_PORT) || 5173,
     proxy: {
-      '/api': `http://127.0.0.1:${process.env.PORT || 3001}`,
+      '/api': {
+        target: `http://127.0.0.1:${process.env.PORT || 3001}`,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            if (req.url?.startsWith('/api/events')) {
+              proxyRes.headers['cache-control'] = 'no-cache'
+              proxyRes.headers['x-accel-buffering'] = 'no'
+            }
+          })
+        },
+      },
     },
   },
 })
