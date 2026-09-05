@@ -11,6 +11,16 @@ import type {
 } from '../src/types.ts'
 import { applyMigrations, currentSchemaVersion } from '../migrations/run.ts'
 import type { JsonObject } from '../migrations/types.ts'
+import {
+  boardsAreEqual,
+  emptyHistory,
+  historyCounts,
+  normalizeHistory,
+  recordEdit,
+  redoEdit,
+  undoEdit,
+  type BoardHistory,
+} from './boardHistory.ts'
 
 interface WorkspaceRegistry {
   activePath: string
@@ -69,6 +79,30 @@ function boardsDir() {
 
 function boardPath(id: string) {
   return boardPathFor(dataDir(), id)
+}
+
+function historyPath(id: string) {
+  return path.join(boardsDir(), `${id}.history.json`)
+}
+
+async function readHistory(id: string): Promise<BoardHistory> {
+  try {
+    return normalizeHistory(await readJson<unknown>(historyPath(id)))
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyHistory()
+    if (err instanceof SyntaxError) return emptyHistory()
+    throw err
+  }
+}
+
+async function writeHistory(id: string, history: BoardHistory) {
+  await writeJsonAtomic(historyPath(id), history)
+}
+
+async function updateIndexTitle(id: string, title: string) {
+  const index = await readIndex()
+  index.boards = index.boards.map(b => (b.id === id ? { id: b.id, title } : b))
+  await writeIndex(index)
 }
 
 async function writeJsonAtomic(file: string, data: unknown) {
@@ -345,12 +379,57 @@ export async function saveBoard(board: BoardDocument): Promise<BoardDocument> {
   if (!known) fail('Board not found', 404)
 
   const { board: next } = await migrateBoard(board)
-  await writeJsonAtomic(boardPath(next.id), next)
-  index.boards = index.boards.map(b =>
-    b.id === next.id ? { id: b.id, title: next.title } : b,
-  )
-  await writeIndex(index)
+  let previous: BoardDocument | null = null
+  try {
+    const raw = await readJson<JsonObject>(boardPath(next.id))
+    previous = (await migrateBoard(raw)).board
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+  }
+
+  if (!previous || !boardsAreEqual(previous, next)) {
+    if (previous) {
+      const history = recordEdit(await readHistory(next.id), previous, Date.now())
+      await writeHistory(next.id, history)
+    }
+    await writeJsonAtomic(boardPath(next.id), next)
+    index.boards = index.boards.map(b =>
+      b.id === next.id ? { id: b.id, title: next.title } : b,
+    )
+    await writeIndex(index)
+  }
   return next
+}
+
+export async function getBoardHistory(id: string) {
+  await ensureSeed()
+  const index = await readIndex()
+  if (!index.boards.some(b => b.id === id)) fail('Board not found', 404)
+  return historyCounts(await readHistory(id))
+}
+
+export async function undoBoard(id: string): Promise<BoardDocument> {
+  await ensureSeed()
+  const current = await readBoard(id)
+  const result = undoEdit(await readHistory(id), current)
+  if (!result) fail('Nothing to undo', 409)
+  const { board: restored } = await migrateBoard(result.restored)
+  await writeJsonAtomic(boardPath(id), restored)
+  await writeHistory(id, result.history)
+  await updateIndexTitle(id, restored.title)
+  return restored
+}
+
+export async function redoBoard(id: string): Promise<BoardDocument> {
+  await ensureSeed()
+  const current = await readBoard(id)
+  const result = redoEdit(await readHistory(id), current)
+  if (!result) fail('Nothing to redo', 409)
+  const { board: restored } = await migrateBoard(result.restored)
+  await writeJsonAtomic(boardPath(id), restored)
+  await writeHistory(id, result.history)
+  await updateIndexTitle(id, restored.title)
+  return restored
 }
 
 export async function createBoard(title: string): Promise<BoardDocument> {
@@ -374,6 +453,11 @@ export async function deleteBoard(id: string): Promise<void> {
   await writeIndex(index)
   try {
     await unlink(boardPath(id))
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+  }
+  try {
+    await unlink(historyPath(id))
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
   }

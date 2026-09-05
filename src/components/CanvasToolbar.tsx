@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { Panel, useReactFlow, useViewport } from '@xyflow/react'
 import { chromeClass } from './ui/controls'
-import { HandIcon, PencilIcon } from './ui/icons'
+import { HandIcon, PencilIcon, RedoIcon, UndoIcon } from './ui/icons'
 import { cn } from '@/lib/cn'
+import { isTypingTarget } from '@/lib/keyboard'
 
 export type InteractionMode = 'edit' | 'navigate'
 
@@ -12,12 +13,14 @@ export const FIT_VIEW_OPTIONS = { duration: 250, padding: 0.2 } as const
 interface Props {
   mode: InteractionMode
   onModeChange: (mode: InteractionMode) => void
+  canUndo?: boolean
+  canRedo?: boolean
+  onUndo?: () => void
+  onRedo?: () => void
 }
 
 function isTyping(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
+  return isTypingTarget(target)
 }
 
 const segmentClass =
@@ -31,7 +34,7 @@ const toolClass =
   One toolbar for the canvas: mode on the left, zoom on the right. Keyboard:
   V (edit), H (pan), and the usual zoom shortcuts via React Flow.
 */
-export default function CanvasToolbar({ mode, onModeChange }: Props) {
+export default function CanvasToolbar({ mode, onModeChange, canUndo, canRedo, onUndo, onRedo }: Props) {
   const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow()
   const { zoom } = useViewport()
 
@@ -72,6 +75,31 @@ export default function CanvasToolbar({ mode, onModeChange }: Props) {
             title="Pan (H): drag anywhere to move the canvas"
           >
             <HandIcon size={14} />
+          </button>
+        </div>
+
+        <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
+
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            className={toolClass}
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo (⌘Z)"
+            aria-label="Undo"
+          >
+            <UndoIcon size={14} />
+          </button>
+          <button
+            type="button"
+            className={toolClass}
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Redo (⇧⌘Z)"
+            aria-label="Redo"
+          >
+            <RedoIcon size={14} />
           </button>
         </div>
 

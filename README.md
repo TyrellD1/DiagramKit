@@ -47,7 +47,7 @@ diagramkit export --no-children
 
 ## How it stores data
 
-Default workspace: `~/.diagramkit` (`index.json` + `boards/<id>.json`). Attach any other folder of that shape. The registry is `~/.diagramkit/workspaces.json`.
+Default workspace: `~/.diagramkit` (`index.json` + `boards/<id>.json`). Attach any other folder of that shape. The registry is `~/.diagramkit/workspaces.json`. Undo/redo lives in `boards/<id>.history.json` next to the board.
 
 ## Agents
 

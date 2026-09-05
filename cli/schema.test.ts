@@ -209,4 +209,20 @@ describe('validateWorkspace', () => {
     expect(messages.some(m => m.includes('red'))).toBe(true)
     expect(messages.some(m => m.includes('dashed'))).toBe(true)
   })
+
+  test('ignores board history sidecars', async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), 'dk-history-'))
+    await writeJson(path.join(dir, 'index.json'), {
+      rootBoardId: homeId,
+      boards: [{ id: homeId, title: 'Home' }],
+    })
+    await writeJson(path.join(dir, 'boards', `${homeId}.json`), emptyBoard(homeId, 'Home'))
+    await writeJson(path.join(dir, 'boards', `${homeId}.history.json`), {
+      undo: [],
+      redo: [],
+      lastEditAt: 0,
+    })
+    const result = await validateWorkspace(dir)
+    expect(result.ok).toBe(true)
+  })
 })

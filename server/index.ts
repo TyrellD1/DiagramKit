@@ -9,11 +9,14 @@ import {
   deleteBoard,
   detachWorkspace,
   ensureApp,
+  getBoardHistory,
   listAttachedWorkspaces,
   listWorkspace,
   readBoard,
+  redoBoard,
   saveBoard,
   switchWorkspace,
+  undoBoard,
 } from './store.ts'
 import { exportBoardTree, parseExportChildren, parseExportTheme, zipExport } from './exportPng.ts'
 
@@ -107,6 +110,33 @@ api.put('/boards/:id', async (c) => {
   } catch (err) {
     const status = statusOf(err)
     return c.json({ error: (err as Error).message }, status === 404 ? 404 : 500)
+  }
+})
+
+api.get('/boards/:id/history', async (c) => {
+  try {
+    return c.json(await getBoardHistory(c.req.param('id')))
+  } catch (err) {
+    const status = statusOf(err)
+    return c.json({ error: (err as Error).message }, status === 404 ? 404 : 500)
+  }
+})
+
+api.post('/boards/:id/undo', async (c) => {
+  try {
+    return c.json(await undoBoard(c.req.param('id')))
+  } catch (err) {
+    const status = statusOf(err)
+    return c.json({ error: (err as Error).message }, status === 404 ? 404 : status === 409 ? 409 : 500)
+  }
+})
+
+api.post('/boards/:id/redo', async (c) => {
+  try {
+    return c.json(await redoBoard(c.req.param('id')))
+  } catch (err) {
+    const status = statusOf(err)
+    return c.json({ error: (err as Error).message }, status === 404 ? 404 : status === 409 ? 409 : 500)
   }
 })
 

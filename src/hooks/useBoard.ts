@@ -47,8 +47,27 @@ export function useBoard(boardId: string | null) {
   const [flowEdges, setFlowEdges] = useState<Edge[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
   const boardRef = useRef<BoardDocument | null>(null)
   const writeQueue = useRef(Promise.resolve())
+
+  const applyLoaded = useCallback((doc: BoardDocument) => {
+    boardRef.current = doc
+    setBoard(doc)
+    setFlowNodes(toFlowNodes(doc))
+    setFlowEdges(toFlowEdges(doc))
+  }, [])
+
+  const refreshHistory = useCallback(async (id: string) => {
+    try {
+      const counts = await api.getBoardHistory(id)
+      setCanUndo(counts.undoSteps > 0)
+      setCanRedo(counts.redoSteps > 0)
+    } catch {
+      // ignore
+    }
+  }, [])
 
   const persist = useCallback((next: BoardDocument, silent = false) => {
     boardRef.current = next
@@ -59,12 +78,12 @@ export function useBoard(boardId: string | null) {
     }
     writeQueue.current = writeQueue.current
       .then(() => api.saveBoard(next))
-      .then(() => undefined)
+      .then(() => refreshHistory(next.id))
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Failed to save board')
       })
     return writeQueue.current
-  }, [])
+  }, [refreshHistory])
 
   const apply = useCallback((fn: (b: BoardDocument) => BoardDocument) => {
     const current = boardRef.current
@@ -90,16 +109,14 @@ export function useBoard(boardId: string | null) {
     setError(null)
     try {
       const doc = await api.getBoard(id)
-      boardRef.current = doc
-      setBoard(doc)
-      setFlowNodes(toFlowNodes(doc))
-      setFlowEdges(toFlowEdges(doc))
+      applyLoaded(doc)
+      await refreshHistory(id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load board')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [applyLoaded, refreshHistory])
 
   useEffect(() => {
     if (boardId) load(boardId)
@@ -170,6 +187,46 @@ export function useBoard(boardId: string | null) {
     return created
   }, [apply])
 
+  const undo = useCallback(() => {
+    const id = boardRef.current?.id
+    if (!id) return
+    writeQueue.current = writeQueue.current
+      .then(async () => {
+        try {
+          const doc = await api.undoBoard(id)
+          applyLoaded(doc)
+          await refreshHistory(id)
+        } catch (err) {
+          if (err instanceof Error && err.message === 'Nothing to undo') {
+            setCanUndo(false)
+            return
+          }
+          setError(err instanceof Error ? err.message : 'Failed to undo')
+        }
+      })
+    return writeQueue.current
+  }, [applyLoaded, refreshHistory])
+
+  const redo = useCallback(() => {
+    const id = boardRef.current?.id
+    if (!id) return
+    writeQueue.current = writeQueue.current
+      .then(async () => {
+        try {
+          const doc = await api.redoBoard(id)
+          applyLoaded(doc)
+          await refreshHistory(id)
+        } catch (err) {
+          if (err instanceof Error && err.message === 'Nothing to redo') {
+            setCanRedo(false)
+            return
+          }
+          setError(err instanceof Error ? err.message : 'Failed to redo')
+        }
+      })
+    return writeQueue.current
+  }, [applyLoaded, refreshHistory])
+
   return {
     board,
     flowNodes,
@@ -187,5 +244,9 @@ export function useBoard(boardId: string | null) {
     addRef,
     deleteRef,
     linkToNewBoard,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   }
 }

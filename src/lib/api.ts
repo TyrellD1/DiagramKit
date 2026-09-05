@@ -42,6 +42,12 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(board),
     }),
+  getBoardHistory: (id: string) =>
+    request<{ undoSteps: number; redoSteps: number }>(`/boards/${id}/history`),
+  undoBoard: (id: string) =>
+    request<BoardDocument>(`/boards/${id}/undo`, { method: 'POST' }),
+  redoBoard: (id: string) =>
+    request<BoardDocument>(`/boards/${id}/redo`, { method: 'POST' }),
   createBoard: (data: { title: string }) =>
     request<BoardDocument>('/boards', {
       method: 'POST',

@@ -16,6 +16,7 @@ App home (default `~/.diagramkit`, override `DIAGRAMKIT_HOME`):
   workspaces.json         # registry of attached workspace dirs + activePath
   index.json              # default workspace board index
   boards/<uuid>.json      # default workspace boards
+  boards/<uuid>.history.json  # undo/redo stacks (created on first save)
 ```
 
 An attached workspace is **some other directory** with the same `index.json` + `boards/` shape. Attaching does not copy boards. Switching `activePath` changes which directory the API reads and writes.
@@ -38,6 +39,8 @@ An attached workspace is **some other directory** with the same `index.json` + `
 The default workspace cannot be detached. User boards in `~/.diagramkit/boards` (and `~/diagram-kit` if attached) are off limits unless the user explicitly asks. Agents test in `~/.diagram-kit-local1` / `~/.diagram-kit-local2`. See `AGENTS.md`.
 
 Writes are atomic: temp file next to the target, then `rename`.
+
+Each board may have `boards/<id>.history.json` (undo/redo stacks). The server writes it on `PUT` (and on undo/redo). Direct file edits do not get a history step. `diagramkit validate` ignores these sidecars.
 
 `parentId` is **not** stored. The sidebar tree is derived by scanning the active workspace's boards for `node.enterBoardId`.
 
@@ -96,4 +99,4 @@ Schema changes: add `migrations/NNN_slug.ts` and never edit a shipped file. See 
 
 Internal React Flow node type is still `'atreides'`. Ignore that name.
 
-Do not add SQLite, Postgres, or a second source of truth.
+Do not add SQLite, Postgres, or a second source of truth. Undo history is JSON next to the board, not a database.

@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { currentSchemaVersion } from '../migrations/run.ts'
+import { isHistoryFileName } from '../server/boardHistory.ts'
 import { expandPath } from '../server/store.ts'
 import { CARD_BORDER_STYLES, CARD_COLORS, isCardBorderStyle, isCardColor } from '../src/lib/cardStyle.ts'
 
@@ -144,7 +145,7 @@ export async function validateWorkspace(rawPath: string): Promise<ValidateResult
     if (!info.isDirectory()) {
       push('boards', '$', 'boards exists but is not a directory')
     } else {
-      boardFiles = (await readdir(boardsDir)).filter(name => name.endsWith('.json'))
+      boardFiles = (await readdir(boardsDir)).filter(name => name.endsWith('.json') && !isHistoryFileName(name))
     }
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {

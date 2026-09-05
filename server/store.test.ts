@@ -5,15 +5,19 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import {
   attachWorkspace,
   createBoard,
+  deleteBoard,
   detachWorkspace,
   ensureSeed,
+  getBoardHistory,
   listAttachedWorkspaces,
   listWorkspace,
   probeWorkspace,
   readBoard,
+  redoBoard,
   saveBoard,
   scaffoldWorkspace,
   switchWorkspace,
+  undoBoard,
 } from './store.ts'
 import { currentSchemaVersion } from '../migrations/run.ts'
 
@@ -163,5 +167,42 @@ describe('json board store', () => {
 
     const raw = JSON.parse(await readFile(file, 'utf8')) as { schemaVersion: number }
     expect(raw.schemaVersion).toBe(currentSchemaVersion())
+  })
+
+  test('saveBoard records history that undo and redo restore', async () => {
+    const workspace = await listWorkspace()
+    const original = await readBoard(workspace.rootBoardId)
+    const edited = { ...original, title: 'HQ' }
+    await saveBoard(edited)
+    expect((await getBoardHistory(original.id)).undoSteps).toBe(1)
+
+    const undone = await undoBoard(original.id)
+    expect(undone.title).toBe('Home')
+    expect((await readBoard(original.id)).title).toBe('Home')
+    expect((await getBoardHistory(original.id)).redoSteps).toBe(1)
+
+    const redone = await redoBoard(original.id)
+    expect(redone.title).toBe('HQ')
+    await expect(redoBoard(original.id)).rejects.toThrow('Nothing to redo')
+  })
+
+  test('rapid saves coalesce into one undo step', async () => {
+    const workspace = await listWorkspace()
+    const board = await readBoard(workspace.rootBoardId)
+    await saveBoard({ ...board, title: 'A' })
+    await saveBoard({ ...board, title: 'B' })
+    expect((await getBoardHistory(board.id)).undoSteps).toBe(1)
+    const undone = await undoBoard(board.id)
+    expect(undone.title).toBe('Home')
+  })
+
+  test('deletes history with the board', async () => {
+    const workspace = await listWorkspace()
+    const child = await createBoard('Scratch')
+    await saveBoard({ ...child, title: 'Scratch 2' })
+    await deleteBoard(child.id)
+    const historyFile = path.join(dir, 'boards', `${child.id}.history.json`)
+    await expect(readFile(historyFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(workspace.rootBoardId).toBeTruthy()
   })
 })

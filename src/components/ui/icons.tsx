@@ -165,3 +165,17 @@ export const SettingsIcon = (p: IconProps) => (
     <circle cx="10" cy="11" r="1.6" fill="currentColor" stroke="none" />
   </svg>
 )
+
+export const UndoIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4.5 7.5H11a2.75 2.75 0 010 5.5H9" />
+    <path d="M7 4.5L4.5 7.5 7 10.5" />
+  </svg>
+)
+
+export const RedoIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M11.5 7.5H5a2.75 2.75 0 000 5.5h2" />
+    <path d="M9 4.5L11.5 7.5 9 10.5" />
+  </svg>
+)

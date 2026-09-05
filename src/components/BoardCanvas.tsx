@@ -37,6 +37,7 @@ import { useNodeActions } from '@/hooks/useNodeActions'
 import { useTheme } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
+import { isRedoKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
 import { activeWorkspaceId, readAppRoute } from '@/lib/route'
 import { waitForFlowEdges } from '@/lib/exportReady'
 import { uuid } from '@/lib/uuid'
@@ -158,6 +159,10 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
     addRef,
     deleteRef,
     linkToNewBoard,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useBoard(currentBoardId)
   const { toast, notify } = useToast()
   const { executeAction } = useNodeActions({ pushBoard, notify })
@@ -257,6 +262,30 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
     setCreateDialogPos(null)
     setEdgeMenu(null)
   }, [currentBoardId])
+
+  useEffect(() => {
+    if (exportMode) return
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return
+      if (isUndoKey(e)) {
+        e.preventDefault()
+        void undo()
+        return
+      }
+      if (isRedoKey(e)) {
+        e.preventDefault()
+        void redo()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [exportMode, undo, redo])
+
+  useEffect(() => {
+    if (selectedNodeId && !nodes.some(n => n.id === selectedNodeId)) {
+      setSelectedNodeId(null)
+    }
+  }, [nodes, selectedNodeId])
 
   const connectNodes = useCallback(
     (fromId: string, toId: string, fromHandle?: string | null, toHandle?: string | null) => {
@@ -486,7 +515,16 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange }: 
       >
         <Background gap={20} size={1} color={colors.grid} bgColor={colors.canvas} />
         {!exportMode && <BoardMiniMap colors={colors} />}
-        {!exportMode && <CanvasToolbar mode={interactionMode} onModeChange={setInteractionMode} />}
+        {!exportMode && (
+          <CanvasToolbar
+            mode={interactionMode}
+            onModeChange={setInteractionMode}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={() => void undo()}
+            onRedo={() => void redo()}
+          />
+        )}
         <FitViewOnBoard boardId={currentBoardId} instant={exportMode} empty={isEmpty} />
       </ReactFlow>
 
