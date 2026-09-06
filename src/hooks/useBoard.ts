@@ -3,6 +3,7 @@ import { MarkerType, type Node, type Edge } from '@xyflow/react'
 import { api } from '@/lib/api'
 import { subscribeLiveEvents } from '@/lib/liveEvents'
 import { targetHandleId, parseHandleId } from '@/lib/connect'
+import { tidyBoard, type NodeSize, type TidyDirection } from '@/lib/tidy'
 import type { AtreidesNodeData, BoardDocument, BoardHistoryView, BoardNode, ReferenceLink } from '@/types'
 import { normalizeCardBorderStyle, normalizeCardColor } from '@/lib/cardStyle'
 
@@ -225,6 +226,12 @@ export function useBoard(boardId: string | null) {
     return created
   }, [apply])
 
+  const tidy = useCallback((sizes: ReadonlyMap<string, NodeSize>, direction: TidyDirection = 'LR') => {
+    const current = boardRef.current
+    if (!current || current.nodes.length === 0) return
+    persist(tidyBoard(current, sizes, direction))
+  }, [persist])
+
   const undo = useCallback(() => {
     const id = boardRef.current?.id
     if (!id) return
@@ -284,6 +291,7 @@ export function useBoard(boardId: string | null) {
     linkToNewBoard,
     undo,
     redo,
+    tidy,
     canUndo,
     canRedo,
     history,

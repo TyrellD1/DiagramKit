@@ -38,6 +38,7 @@ import { useNodeActions } from '@/hooks/useNodeActions'
 import { useTheme, colorModeOf } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
+import { nodeSizesFromFlow } from '@/lib/tidy'
 import { isRedoKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
 import { activeWorkspaceId, readAppRoute } from '@/lib/route'
 import { waitForFlowEdges } from '@/lib/exportReady'
@@ -165,11 +166,13 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
     redo,
     canUndo,
     canRedo,
+    tidy,
     history,
     refreshHistory,
   } = useBoard(currentBoardId)
   const { toast, notify } = useToast()
   const { executeAction } = useNodeActions({ pushBoard, notify })
+  const { fitView } = useReactFlow()
 
   useEffect(() => {
     if (exportMode) document.documentElement.setAttribute('data-export', '1')
@@ -541,6 +544,15 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
             historyOpen={historyOpen}
             onUndo={() => void undo()}
             onRedo={() => void redo()}
+            canTidy={nodes.length > 0}
+            onTidy={() => {
+              tidy(nodeSizesFromFlow(nodes))
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  void fitView(FIT_VIEW_OPTIONS)
+                })
+              })
+            }}
             onOpenHistory={() => {
               setHistoryOpen(true)
               void refreshHistory()

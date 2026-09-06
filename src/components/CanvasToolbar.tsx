@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Panel, useReactFlow, useViewport } from '@xyflow/react'
 import { chromeClass } from './ui/controls'
-import { HandIcon, HistoryIcon, PencilIcon, RedoIcon, UndoIcon } from './ui/icons'
+import { HandIcon, HistoryIcon, PencilIcon, RedoIcon, TidyIcon, UndoIcon } from './ui/icons'
 import { cn } from '@/lib/cn'
 import { isTypingTarget } from '@/lib/keyboard'
 import type { HistorySource } from '@/types'
@@ -21,6 +21,8 @@ interface Props {
   historyOpen?: boolean
   onUndo?: () => void
   onRedo?: () => void
+  onTidy?: () => void
+  canTidy?: boolean
   onOpenHistory?: () => void
 }
 
@@ -55,6 +57,8 @@ export default function CanvasToolbar({
   historyOpen,
   onUndo,
   onRedo,
+  onTidy,
+  canTidy,
   onOpenHistory,
 }: Props) {
   const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow()
@@ -133,6 +137,21 @@ export default function CanvasToolbar({
             aria-label="Redo"
           >
             <RedoIcon size={14} />
+          </button>
+        </div>
+
+        <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
+
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            className={toolClass}
+            onClick={onTidy}
+            disabled={!canTidy}
+            title="Tidy layout"
+            aria-label="Tidy layout"
+          >
+            <TidyIcon size={14} />
           </button>
         </div>
 

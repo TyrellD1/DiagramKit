@@ -186,3 +186,11 @@ export const HistoryIcon = (p: IconProps) => (
     <path d="M8 5v3.5l2.25 1.25" />
   </svg>
 )
+
+export const TidyIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="1.5" y="4" width="5" height="4" rx="1" />
+    <rect x="9.5" y="3" width="5" height="6" rx="1" />
+    <path d="M6.5 6h3" />
+  </svg>
+)
