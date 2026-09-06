@@ -187,6 +187,20 @@ export const HistoryIcon = (p: IconProps) => (
   </svg>
 )
 
+export const CopyIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5.5" y="2.5" width="8" height="8" rx="1.5" />
+    <path d="M10.5 10.5v2a1.5 1.5 0 01-1.5 1.5H3.5A1.5 1.5 0 012 12.5v-5A1.5 1.5 0 013.5 6H6" />
+  </svg>
+)
+
+export const DuplicateIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5.5" y="2.5" width="8" height="8" rx="1.5" />
+    <rect x="2.5" y="5.5" width="8" height="8" rx="1.5" />
+  </svg>
+)
+
 export const TidyIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <rect x="1.5" y="4" width="5" height="4" rx="1" />

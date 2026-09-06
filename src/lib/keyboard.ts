@@ -16,3 +16,19 @@ export function isRedoKey(e: KeyboardEvent) {
   if ((e.key === 'y' || e.key === 'Y') && !e.shiftKey && e.ctrlKey && !e.metaKey) return true
   return false
 }
+
+function isMod(e: KeyboardEvent) {
+  return (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey
+}
+
+export function isCopyKey(e: KeyboardEvent) {
+  return isMod(e) && (e.key === 'c' || e.key === 'C')
+}
+
+export function isPasteKey(e: KeyboardEvent) {
+  return isMod(e) && (e.key === 'v' || e.key === 'V')
+}
+
+export function isDuplicateKey(e: KeyboardEvent) {
+  return isMod(e) && (e.key === 'd' || e.key === 'D')
+}

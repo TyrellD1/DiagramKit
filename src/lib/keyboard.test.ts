@@ -1,5 +1,12 @@
 import { expect, test } from 'vitest'
-import { isRedoKey, isUndoKey } from './keyboard'
+import { isCopyKey, isDuplicateKey, isPasteKey, isRedoKey, isUndoKey } from './keyboard'
+
+test('⌘C / ⌘V / ⌘D copy, paste, and duplicate', () => {
+  expect(isCopyKey(chord({ metaKey: true, key: 'c' }))).toBe(true)
+  expect(isPasteKey(chord({ ctrlKey: true, key: 'v' }))).toBe(true)
+  expect(isDuplicateKey(chord({ metaKey: true, key: 'd' }))).toBe(true)
+  expect(isCopyKey(chord({ metaKey: true, key: 'c', shiftKey: true }))).toBe(false)
+})
 
 function chord(partial: Partial<KeyboardEvent>) {
   return {

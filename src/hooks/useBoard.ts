@@ -172,6 +172,14 @@ export function useBoard(boardId: string | null) {
     apply(b => ({ ...b, nodes: [...b.nodes, node] }))
   }, [apply])
 
+  const updateBoardTitle = useCallback((title: string) => {
+    const current = boardRef.current
+    if (!current) return Promise.resolve()
+    const nextTitle = title.trim() || 'Untitled'
+    if (current.title === nextTitle) return Promise.resolve()
+    return persist({ ...current, title: nextTitle })
+  }, [persist])
+
   const deleteNode = useCallback((nodeId: string) => {
     apply(b => ({
       ...b,
@@ -282,6 +290,7 @@ export function useBoard(boardId: string | null) {
     persistPositions,
     updateNode,
     addNode,
+    updateBoardTitle,
     deleteNode,
     addEdge,
     updateEdge,

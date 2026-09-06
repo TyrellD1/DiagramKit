@@ -26,6 +26,7 @@ import CanvasToolbar, { FIT_VIEW_OPTIONS, type InteractionMode } from './CanvasT
 import NodeEditor from './NodeEditor'
 import CreateNodeDialog from './CreateNodeDialog'
 import EdgeContextMenu from './EdgeContextMenu'
+import NodeContextMenu from './NodeContextMenu'
 import ThemeToggle from './ThemeToggle'
 import ExportButton from './ExportButton'
 import SettingsModal, { SettingsButton } from './SettingsModal'
@@ -39,7 +40,8 @@ import { useTheme, colorModeOf } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
 import { nodeSizesFromFlow } from '@/lib/tidy'
-import { isRedoKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
+import { isCopyKey, isDuplicateKey, isPasteKey, isRedoKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
+import { cloneNodeContent, DUPLICATE_OFFSET, readNodeClipboard, writeNodeClipboard } from '@/lib/nodeClipboard'
 import { activeWorkspaceId, readAppRoute } from '@/lib/route'
 import { waitForFlowEdges } from '@/lib/exportReady'
 import { uuid } from '@/lib/uuid'
@@ -155,6 +157,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
     persistPositions,
     updateNode,
     addNode,
+    updateBoardTitle,
     deleteNode,
     addEdge,
     updateEdge,
@@ -172,7 +175,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
   } = useBoard(currentBoardId)
   const { toast, notify } = useToast()
   const { executeAction } = useNodeActions({ pushBoard, notify })
-  const { fitView } = useReactFlow()
+  const { fitView, screenToFlowPosition } = useReactFlow()
 
   useEffect(() => {
     if (exportMode) document.documentElement.setAttribute('data-export', '1')
@@ -210,6 +213,8 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
   const [createDialogPos, setCreateDialogPos] = useState<{ x: number; y: number } | null>(null)
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('edit')
   const [edgeMenu, setEdgeMenu] = useState<{ edgeId: string; edgeType: string; position: { x: number; y: number } } | null>(null)
+  const [nodeMenu, setNodeMenu] = useState<{ nodeId: string; position: { x: number; y: number } } | null>(null)
+  const lastFlowPoint = useRef<{ x: number; y: number } | null>(null)
 
   const interactionProps = exportMode
     ? {
@@ -269,7 +274,40 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
     setSelectedNodeId(null)
     setCreateDialogPos(null)
     setEdgeMenu(null)
+    setNodeMenu(null)
+    lastFlowPoint.current = null
   }, [currentBoardId])
+
+  const selectedRfNode = nodes.find(n => n.selected)
+  const menuNode = nodeMenu ? board?.nodes.find(n => n.id === nodeMenu.nodeId) : null
+
+  const copyNode = useCallback((nodeId: string) => {
+    const source = board?.nodes.find(n => n.id === nodeId)
+    if (!source) return
+    writeNodeClipboard(source)
+  }, [board])
+
+  const duplicateNode = useCallback((nodeId: string) => {
+    const source = board?.nodes.find(n => n.id === nodeId)
+    if (!source) return
+    addNode(cloneNodeContent(source, { x: source.x + DUPLICATE_OFFSET, y: source.y + DUPLICATE_OFFSET }))
+  }, [board, addNode])
+
+  const pasteAt = useCallback((screen?: { x: number; y: number }) => {
+    const flow = lastFlowPoint.current
+      ?? (screen ? screenToFlowPosition(screen) : screenToFlowPosition({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      }))
+    lastFlowPoint.current = { x: flow.x + DUPLICATE_OFFSET, y: flow.y + DUPLICATE_OFFSET }
+    return flow
+  }, [screenToFlowPosition])
+
+  const pasteNode = useCallback(async (screen?: { x: number; y: number }) => {
+    const payload = await readNodeClipboard()
+    if (!payload) return
+    addNode(cloneNodeContent(payload, pasteAt(screen)))
+  }, [addNode, pasteAt])
 
   useEffect(() => {
     if (exportMode) return
@@ -283,11 +321,29 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
       if (isRedoKey(e)) {
         e.preventDefault()
         void redo()
+        return
+      }
+      const targetId = nodeMenu?.nodeId ?? selectedRfNode?.id ?? selectedNodeId
+      if (isCopyKey(e)) {
+        if (!targetId) return
+        e.preventDefault()
+        copyNode(targetId)
+        return
+      }
+      if (isDuplicateKey(e)) {
+        if (!targetId) return
+        e.preventDefault()
+        duplicateNode(targetId)
+        return
+      }
+      if (isPasteKey(e)) {
+        e.preventDefault()
+        void pasteNode()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [exportMode, undo, redo])
+  }, [exportMode, undo, redo, nodeMenu, selectedRfNode, selectedNodeId, copyNode, duplicateNode, pasteNode])
 
   useEffect(() => {
     if (selectedNodeId && !nodes.some(n => n.id === selectedNodeId)) {
@@ -395,15 +451,20 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
     setEdgeMenu(null)
   }, [deleteEdge])
 
-  const onNodeDoubleClick: NodeMouseHandler = useCallback((_event) => {
-    _event.stopPropagation()
+  const onNodeDoubleClick: NodeMouseHandler = useCallback((event, node) => {
+    event.stopPropagation()
+    setNodeMenu(null)
+    setSelectedNodeId(node.id)
   }, [])
 
   const onNodeClick: NodeMouseHandler = useCallback(
-    (_event, node) => {
-      setSelectedNodeId(node.id)
+    (event, node) => {
+      event.stopPropagation()
       setCreateDialogPos(null)
       setEdgeMenu(null)
+      lastFlowPoint.current = { x: node.position.x + DUPLICATE_OFFSET, y: node.position.y + DUPLICATE_OFFSET }
+      if (event.detail > 1) return
+      setNodeMenu({ nodeId: node.id, position: { x: event.clientX, y: event.clientY } })
     },
     []
   )
@@ -412,15 +473,18 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
     (event: React.MouseEvent) => {
       setCreateDialogPos({ x: event.clientX, y: event.clientY })
       setSelectedNodeId(null)
+      setNodeMenu(null)
     },
     []
   )
 
-  const onPaneClick = useCallback(() => {
+  const onPaneClick = useCallback((event: React.MouseEvent) => {
+    lastFlowPoint.current = screenToFlowPosition({ x: event.clientX, y: event.clientY })
     setSelectedNodeId(null)
     setCreateDialogPos(null)
     setEdgeMenu(null)
-  }, [])
+    setNodeMenu(null)
+  }, [screenToFlowPosition])
 
   const selectedNode = selectedNodeId
     ? nodes.find(n => n.id === selectedNodeId)
@@ -462,6 +526,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
           onSelectBoard={handleSidebarNavigate}
           onWorkspacesChange={onWorkspacesChange}
           onBoardsChange={onBoardsChange}
+          onRenameCurrent={updateBoardTitle}
         />
       )}
       {!exportMode && (
@@ -522,6 +587,14 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
         onEdgeClick={onEdgeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeClick={onNodeClick}
+        onNodeContextMenu={(event, node) => {
+          event.preventDefault()
+          event.stopPropagation()
+          setCreateDialogPos(null)
+          setEdgeMenu(null)
+          lastFlowPoint.current = { x: node.position.x + DUPLICATE_OFFSET, y: node.position.y + DUPLICATE_OFFSET }
+          setNodeMenu({ nodeId: node.id, position: { x: event.clientX, y: event.clientY } })
+        }}
         onDoubleClick={onPaneDoubleClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
@@ -586,6 +659,25 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
           onToggleType={handleToggleEdgeType}
           onDelete={handleDeleteEdge}
           onClose={() => setEdgeMenu(null)}
+        />
+      )}
+
+      {nodeMenu && menuNode && (
+        <NodeContextMenu
+          position={nodeMenu.position}
+          onCopy={() => {
+            copyNode(nodeMenu.nodeId)
+            setNodeMenu(null)
+          }}
+          onDuplicate={() => {
+            duplicateNode(nodeMenu.nodeId)
+            setNodeMenu(null)
+          }}
+          onEdit={() => {
+            setSelectedNodeId(nodeMenu.nodeId)
+            setNodeMenu(null)
+          }}
+          onClose={() => setNodeMenu(null)}
         />
       )}
 

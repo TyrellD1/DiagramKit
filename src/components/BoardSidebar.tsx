@@ -2,7 +2,7 @@ import { useState, useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { useBoards, type BoardTreeNode } from '@/hooks/useBoards'
 import { api } from '@/lib/api'
 import { Button, chromeClass, MenuItem, menuClass, SectionLabel, TextInput } from './ui/controls'
-import { ChevronRightIcon, CloseIcon, MenuIcon, PlusIcon, TrashIcon } from './ui/icons'
+import { ChevronRightIcon, CloseIcon, MenuIcon, PencilIcon, PlusIcon, TrashIcon } from './ui/icons'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
 import ThemeToggle from './ThemeToggle'
 import DeleteBoardModal from './DeleteBoardModal'
@@ -27,6 +27,7 @@ interface Props {
   onSelectBoard: (boardId: string, title: string) => void
   onWorkspacesChange: (next: WorkspaceList) => void
   onBoardsChange: (next: WorkspaceIndex) => void
+  onRenameCurrent?: (title: string) => Promise<void>
 }
 
 export default function BoardSidebar({
@@ -37,6 +38,7 @@ export default function BoardSidebar({
   onSelectBoard,
   onWorkspacesChange,
   onBoardsChange,
+  onRenameCurrent,
 }: Props) {
   const { tree, rootBoardId, loading, reload } = useBoards()
   const setOpen = (next: boolean | ((prev: boolean) => boolean)) =>
@@ -46,6 +48,7 @@ export default function BoardSidebar({
   const [creating, setCreating] = useState(false)
   const [menu, setMenu] = useState<{ id: string; title: string; x: number; y: number } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
   const newBoardId = useId()
   const newBoardRef = useRef<HTMLInputElement>(null)
 
@@ -78,6 +81,27 @@ export default function BoardSidebar({
       onSelectBoard(created.id, created.title)
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleRename = async (id: string, nextTitle: string) => {
+    const title = nextTitle.trim() || 'Untitled'
+    const current = treeFindTitle(tree, id)
+    if (current === title) {
+      setRenamingId(null)
+      return
+    }
+    try {
+      if (id === currentBoardId && onRenameCurrent) {
+        await onRenameCurrent(title)
+      } else {
+        const doc = await api.getBoard(id)
+        if (doc.title !== title) await api.saveBoard({ ...doc, title })
+      }
+      const next = await reload()
+      onBoardsChange(next)
+    } finally {
+      setRenamingId(null)
     }
   }
 
@@ -177,8 +201,11 @@ export default function BoardSidebar({
                     node={node}
                     depth={0}
                     currentBoardId={currentBoardId}
+                    renamingId={renamingId}
                     onSelect={onSelectBoard}
                     onContextMenu={(board, x, y) => setMenu({ id: board.id, title: board.title, x, y })}
+                    onRename={handleRename}
+                    onStartRename={id => setRenamingId(id)}
                   />
                 ))
               )}
@@ -199,6 +226,10 @@ export default function BoardSidebar({
           title={menu.title}
           isRoot={menu.id === rootBoardId}
           position={{ x: menu.x, y: menu.y }}
+          onRename={() => {
+            setRenamingId(menu.id)
+            setMenu(null)
+          }}
           onDelete={() => {
             setPendingDelete({ id: menu.id, title: menu.title })
             setMenu(null)
@@ -222,22 +253,44 @@ function countBoards(tree: BoardTreeNode[]): number {
   return tree.reduce((sum, n) => sum + 1 + countBoards(n.children), 0)
 }
 
+function treeFindTitle(tree: BoardTreeNode[], id: string): string | null {
+  for (const node of tree) {
+    if (node.board.id === id) return node.board.title
+    const nested = treeFindTitle(node.children, id)
+    if (nested) return nested
+  }
+  return null
+}
+
 function TreeItem({
   node,
   depth,
   currentBoardId,
+  renamingId,
   onSelect,
   onContextMenu,
+  onRename,
+  onStartRename,
 }: {
   node: BoardTreeNode
   depth: number
   currentBoardId: string | null
+  renamingId: string | null
   onSelect: (boardId: string, title: string) => void
   onContextMenu: (board: { id: string; title: string }, x: number, y: number) => void
+  onRename: (id: string, title: string) => void
+  onStartRename: (id: string) => void
 }) {
   const [expanded, setExpanded] = useState(true)
+  const [draft, setDraft] = useState(node.board.title)
+  const skipBlur = useRef(false)
   const isActive = node.board.id === currentBoardId
   const hasChildren = node.children.length > 0
+  const renaming = renamingId === node.board.id
+
+  useEffect(() => {
+    if (renaming) setDraft(node.board.title)
+  }, [renaming, node.board.title])
 
   return (
     <div>
@@ -261,22 +314,58 @@ function TreeItem({
         >
           <ChevronRightIcon size={12} className={cn('transition-transform duration-150', expanded && 'rotate-90')} />
         </button>
-        <button
-          type="button"
-          onClick={() => onSelect(node.board.id, node.board.title)}
-          onContextMenu={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onContextMenu(node.board, e.clientX, e.clientY)
-          }}
-          className={cn(
-            'min-w-0 flex-1 truncate border-none bg-transparent p-0 py-1 text-left cursor-pointer',
-            isActive && 'font-medium',
-          )}
-          aria-current={isActive ? 'page' : undefined}
-        >
-          {node.board.title}
-        </button>
+        {renaming ? (
+          <TextInput
+            autoFocus
+            value={draft}
+            aria-label="Board name"
+            className="h-6 min-w-0 flex-1 px-1.5 py-0 text-sm"
+            onFocus={e => e.currentTarget.select()}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={() => {
+              if (skipBlur.current) {
+                skipBlur.current = false
+                return
+              }
+              onRename(node.board.id, draft)
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                skipBlur.current = true
+                onRename(node.board.id, draft)
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                skipBlur.current = true
+                setDraft(node.board.title)
+                onStartRename('')
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => onSelect(node.board.id, node.board.title)}
+            onDoubleClick={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              onStartRename(node.board.id)
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onContextMenu(node.board, e.clientX, e.clientY)
+            }}
+            className={cn(
+              'min-w-0 flex-1 truncate border-none bg-transparent p-0 py-1 text-left cursor-pointer',
+              isActive && 'font-medium',
+            )}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            {node.board.title}
+          </button>
+        )}
       </div>
 
       {hasChildren && expanded && (
@@ -287,8 +376,11 @@ function TreeItem({
               node={child}
               depth={depth + 1}
               currentBoardId={currentBoardId}
+              renamingId={renamingId}
               onSelect={onSelect}
               onContextMenu={onContextMenu}
+              onRename={onRename}
+              onStartRename={onStartRename}
             />
           ))}
         </div>
@@ -301,12 +393,14 @@ function BoardTreeMenu({
   title,
   isRoot,
   position,
+  onRename,
   onDelete,
   onClose,
 }: {
   title: string
   isRoot: boolean
   position: { x: number; y: number }
+  onRename: () => void
   onDelete: () => void
   onClose: () => void
 }) {
@@ -344,6 +438,10 @@ function BoardTreeMenu({
         className={cn('animate-pop fixed z-50 min-w-[168px]', menuClass)}
         style={{ left: pos.x, top: pos.y }}
       >
+        <MenuItem role="menuitem" icon={<PencilIcon size={14} />} onClick={onRename}>
+          Rename
+        </MenuItem>
+        <div className="my-1 h-px bg-border" role="separator" />
         <MenuItem
           role="menuitem"
           destructive
