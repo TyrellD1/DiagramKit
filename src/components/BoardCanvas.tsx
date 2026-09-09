@@ -669,7 +669,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
               setHistoryOpen(true)
               void refreshHistory()
             }}
-            sidebarGutter={sidebarOpen ? SIDEBAR_WIDTH : 0}
+            centered={sidebarOpen}
           />
         )}
         <FitViewOnBoard boardId={currentBoardId} instant={exportMode} empty={isEmpty} />
