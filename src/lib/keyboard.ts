@@ -36,3 +36,7 @@ export function isDuplicateKey(e: KeyboardEvent) {
 export function isSearchKey(e: KeyboardEvent) {
   return isMod(e) && (e.key === 'p' || e.key === 'P')
 }
+
+export function isFitViewKey(e: KeyboardEvent) {
+  return isMod(e) && (e.key === 'j' || e.key === 'J')
+}

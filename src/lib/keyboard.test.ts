@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { isCopyKey, isDuplicateKey, isPasteKey, isRedoKey, isSearchKey, isUndoKey } from './keyboard'
+import { isCopyKey, isDuplicateKey, isFitViewKey, isPasteKey, isRedoKey, isSearchKey, isUndoKey } from './keyboard'
 
 test('⌘C / ⌘V / ⌘D copy, paste, and duplicate', () => {
   expect(isCopyKey(chord({ metaKey: true, key: 'c' }))).toBe(true)
@@ -13,6 +13,13 @@ test('⌘P and Ctrl+P open board search', () => {
   expect(isSearchKey(chord({ ctrlKey: true, key: 'P' }))).toBe(true)
   expect(isSearchKey(chord({ metaKey: true, key: 'p', shiftKey: true }))).toBe(false)
   expect(isSearchKey(chord({ key: 'p' }))).toBe(false)
+})
+
+test('Ctrl+J and ⌘J fit to view', () => {
+  expect(isFitViewKey(chord({ ctrlKey: true, key: 'j' }))).toBe(true)
+  expect(isFitViewKey(chord({ metaKey: true, key: 'J' }))).toBe(true)
+  expect(isFitViewKey(chord({ ctrlKey: true, key: 'j', shiftKey: true }))).toBe(false)
+  expect(isFitViewKey(chord({ key: 'j' }))).toBe(false)
 })
 
 function chord(partial: Partial<KeyboardEvent>) {

@@ -3,7 +3,7 @@ import { Panel, useReactFlow, useViewport } from '@xyflow/react'
 import { chromeClass } from './ui/controls'
 import { HandIcon, HistoryIcon, PencilIcon, RedoIcon, TidyIcon, UndoIcon } from './ui/icons'
 import { cn } from '@/lib/cn'
-import { isTypingTarget } from '@/lib/keyboard'
+import { isFitViewKey, isTypingTarget } from '@/lib/keyboard'
 import type { HistorySource } from '@/types'
 
 export type InteractionMode = 'edit' | 'navigate'
@@ -68,7 +68,13 @@ export default function CanvasToolbar({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
+      if (isTyping(e.target)) return
+      if (isFitViewKey(e)) {
+        e.preventDefault()
+        void fitView(FIT_VIEW_OPTIONS)
+        return
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'v' || e.key === 'V') onModeChange('edit')
       if (e.key === 'h' || e.key === 'H') onModeChange('navigate')
       if (e.key === '1' && e.shiftKey) {
@@ -76,8 +82,8 @@ export default function CanvasToolbar({
         void fitView(FIT_VIEW_OPTIONS)
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [onModeChange, fitView])
 
   return (
@@ -182,7 +188,7 @@ export default function CanvasToolbar({
               <path d="M8 3.5v9M3.5 8h9" />
             </svg>
           </button>
-          <button type="button" className={toolClass} onClick={() => void fitView(FIT_VIEW_OPTIONS)} title="Fit to view (Shift+1)" aria-label="Fit to view">
+          <button type="button" className={toolClass} onClick={() => void fitView(FIT_VIEW_OPTIONS)} title="Fit to view (Ctrl+J)" aria-label="Fit to view">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M2.5 6V3.5A1 1 0 013.5 2.5H6M10 2.5h2.5a1 1 0 011 1V6M13.5 10v2.5a1 1 0 01-1 1H10M6 13.5H3.5a1 1 0 01-1-1V10" />
             </svg>
