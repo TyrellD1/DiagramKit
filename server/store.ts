@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import type {
   BoardDocument,
+  BoardSearchHit,
   EditSource,
   StoredIndex,
   WorkspaceIndex,
@@ -488,4 +489,28 @@ export async function listWorkspace(): Promise<WorkspaceIndex> {
       parentId: parentById.get(b.id) ?? null,
     })),
   }
+}
+
+/** Read-only title index across attached workspaces. Does not switch the active workspace. */
+export async function listAllBoards(): Promise<{ boards: BoardSearchHit[] }> {
+  const registry = await ensureApp()
+  const boards: BoardSearchHit[] = []
+  for (const space of registry.workspaces) {
+    try {
+      const index = await readJson<StoredIndex>(indexPathFor(space.path))
+      if (!Array.isArray(index.boards)) continue
+      for (const entry of index.boards) {
+        if (!entry?.id || typeof entry.title !== 'string') continue
+        boards.push({
+          id: entry.id,
+          title: entry.title,
+          workspaceId: space.id,
+          workspaceName: space.name,
+        })
+      }
+    } catch {
+      // skip missing or invalid workspace indexes
+    }
+  }
+  return { boards }
 }

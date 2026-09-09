@@ -13,6 +13,7 @@ import {
   detachWorkspace,
   ensureApp,
   getBoardHistory,
+  listAllBoards,
   listAttachedWorkspaces,
   listWorkspace,
   readBoard,
@@ -77,6 +78,10 @@ api.delete('/workspaces/:id', async (c) => {
     const status = statusOf(err)
     return c.json({ error: (err as Error).message }, status === 400 ? 400 : status === 404 ? 404 : 500)
   }
+})
+
+api.get('/search/boards', async (c) => {
+  return c.json(await listAllBoards())
 })
 
 api.get('/boards', async (c) => {

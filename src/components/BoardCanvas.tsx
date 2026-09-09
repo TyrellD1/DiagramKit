@@ -31,6 +31,7 @@ import ThemeToggle from './ThemeToggle'
 import ExportButton from './ExportButton'
 import SettingsModal, { SettingsButton } from './SettingsModal'
 import HistoryModal from './HistoryModal'
+import BoardSearchDialog, { BoardSearchButton } from './BoardSearchDialog'
 import { Toast, useToast } from './Toast'
 import { Kbd, chromeClass } from './ui/controls'
 import { useBoard } from '@/hooks/useBoard'
@@ -40,12 +41,13 @@ import { useTheme, colorModeOf } from '@/theme/ThemeProvider'
 import { useThemeColors } from '@/theme/useThemeColors'
 import { parseHandleId, pickHandles, sourceTargetForDrag } from '@/lib/connect'
 import { nodeSizesFromFlow } from '@/lib/tidy'
-import { isCopyKey, isDuplicateKey, isPasteKey, isRedoKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
+import { isCopyKey, isDuplicateKey, isPasteKey, isRedoKey, isSearchKey, isTypingTarget, isUndoKey } from '@/lib/keyboard'
 import { cloneNodeContent, DUPLICATE_OFFSET, readNodeClipboard, writeNodeClipboard } from '@/lib/nodeClipboard'
+import { api } from '@/lib/api'
 import { activeWorkspaceId, readAppRoute } from '@/lib/route'
 import { waitForFlowEdges } from '@/lib/exportReady'
 import { uuid } from '@/lib/uuid'
-import type { AtreidesNodeData, ChildLink, ReferenceLink, WorkspaceIndex, WorkspaceList } from '@/types'
+import type { AtreidesNodeData, BoardSearchHit, ChildLink, ReferenceLink, WorkspaceIndex, WorkspaceList } from '@/types'
 import type { Node, Edge } from '@xyflow/react'
 
 const nodeTypes = { atreides: AtreidesNode }
@@ -138,7 +140,7 @@ function refLinkToAction(ref: ReferenceLink): ChildLink | null {
 interface Props {
   boards: WorkspaceIndex
   workspaces: WorkspaceList
-  onWorkspacesChange: (next: WorkspaceList) => void
+  onWorkspacesChange: (next: WorkspaceList, boardId?: string | null) => void | Promise<void>
   onBoardsChange: (next: WorkspaceIndex) => void
 }
 
@@ -208,6 +210,7 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen)
   const [createDialogPos, setCreateDialogPos] = useState<{ x: number; y: number } | null>(null)
@@ -308,6 +311,28 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
     if (!payload) return
     addNode(cloneNodeContent(payload, pasteAt(screen)))
   }, [addNode, pasteAt])
+
+  const openSearchHit = useCallback(async (hit: BoardSearchHit) => {
+    setSearchOpen(false)
+    if (hit.workspaceId === workspaceId) {
+      if (hit.id !== currentBoardId) pushBoard(hit.id, hit.title)
+      return
+    }
+    const next = await api.switchWorkspace({ id: hit.workspaceId })
+    await onWorkspacesChange(next, hit.id)
+  }, [workspaceId, currentBoardId, pushBoard, onWorkspacesChange])
+
+  useEffect(() => {
+    if (exportMode) return
+    const onKey = (e: KeyboardEvent) => {
+      if (!isSearchKey(e)) return
+      e.preventDefault()
+      e.stopPropagation()
+      setSearchOpen(true)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [exportMode])
 
   useEffect(() => {
     if (exportMode) return
@@ -550,6 +575,11 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
               onError={notify}
             />
           )}
+          <BoardSearchButton
+            open={searchOpen}
+            onClick={() => setSearchOpen(true)}
+            className={chromeClass}
+          />
           <SettingsButton
             open={settingsOpen}
             onClick={() => setSettingsOpen(true)}
@@ -557,6 +587,15 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
           />
           <ThemeToggle className={chromeClass} />
         </div>
+      )}
+      {searchOpen && !exportMode && (
+        <BoardSearchDialog
+          workspaces={workspaces}
+          currentBoardId={currentBoardId}
+          currentWorkspaceId={workspaceId}
+          onOpen={hit => { void openSearchHit(hit) }}
+          onClose={() => setSearchOpen(false)}
+        />
       )}
       {settingsOpen && !exportMode && (
         <SettingsModal onClose={() => setSettingsOpen(false)} />
@@ -630,12 +669,13 @@ export default function BoardCanvas({ boards, workspaces, onWorkspacesChange, on
               setHistoryOpen(true)
               void refreshHistory()
             }}
+            sidebarGutter={sidebarOpen ? SIDEBAR_WIDTH : 0}
           />
         )}
         <FitViewOnBoard boardId={currentBoardId} instant={exportMode} empty={isEmpty} />
       </ReactFlow>
 
-      {isEmpty && !createDialogPos && !exportMode && (
+      {isEmpty && !createDialogPos && !exportMode && !searchOpen && (
         <div className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center">
           <div className="animate-fade flex flex-col items-center gap-2 text-center">
             <p className="m-0 text-base font-medium text-muted">This board is empty</p>

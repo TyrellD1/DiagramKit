@@ -1,4 +1,4 @@
-import type { BoardDocument, BoardHistoryView, WorkspaceIndex, WorkspaceList } from '@/types'
+import type { BoardDocument, BoardHistoryView, BoardSearchHit, WorkspaceIndex, WorkspaceList } from '@/types'
 import type { Theme } from '@/theme/themes'
 
 const UI_SOURCE = { 'X-DiagramKit-Source': 'ui' }
@@ -59,6 +59,7 @@ export const api = {
     }),
   deleteBoard: (id: string) =>
     request<void>(`/boards/${id}`, { method: 'DELETE' }),
+  searchBoards: () => request<{ boards: BoardSearchHit[] }>('/search/boards'),
   listWorkspaces: () => request<WorkspaceList>('/workspaces'),
   attachWorkspace: (data: { path: string; name?: string }) =>
     request<WorkspaceList>('/workspaces/attach', {

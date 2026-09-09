@@ -76,12 +76,12 @@ function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const handleWorkspacesChange = useCallback(async (next: WorkspaceList) => {
+  const handleWorkspacesChange = useCallback(async (next: WorkspaceList, boardId?: string | null) => {
     try {
       const boardList = await api.getWorkspace()
       writeAppRoute({
         workspaceId: activeWorkspaceId(next),
-        boardId: boardList.rootBoardId,
+        boardId: resolveBoardId(boardList, boardId ?? null),
       }, 'push')
       setWorkspaces(next)
       setBoards(boardList)

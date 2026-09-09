@@ -39,6 +39,7 @@ Base: `http://127.0.0.1:3001/api` (or `/api` from the Vite origin).
 | Method | Path | Body | Notes |
 |--------|------|------|--------|
 | GET | `/events` | | SSE. `{ type: "board", id, source }` on CLI `PUT`/`undo`/`redo`. `{ type: "workspace" }` on create/delete. The UI ignores `source: "ui"`. Direct file writes do not emit. |
+| GET | `/search/boards` | | `{ boards: [{ id, title, workspaceId, workspaceName }] }` from every attached workspace. Does not switch the active workspace. |
 | GET | `/boards` | | `{ rootBoardId, boards: [{ id, title, parentId }] }` |
 | POST | `/boards` | `{ title }` | Creates empty board file + index row |
 | GET | `/boards/:id` | | Full `BoardDocument` |

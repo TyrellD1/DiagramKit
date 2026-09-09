@@ -104,6 +104,14 @@ export interface WorkspaceList {
   workspaces: WorkspaceRecord[]
 }
 
+/** Title index row for command search. Does not include node/edge content. */
+export interface BoardSearchHit {
+  id: string
+  title: string
+  workspaceId: string
+  workspaceName: string
+}
+
 export interface AtreidesNodeData {
   title: string
   description: string | null

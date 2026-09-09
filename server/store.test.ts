@@ -9,6 +9,7 @@ import {
   detachWorkspace,
   ensureSeed,
   getBoardHistory,
+  listAllBoards,
   listAttachedWorkspaces,
   listWorkspace,
   probeWorkspace,
@@ -225,5 +226,22 @@ describe('json board store', () => {
     const historyFile = path.join(dir, 'boards', `${child.id}.history.json`)
     await expect(readFile(historyFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect(workspace.rootBoardId).toBeTruthy()
+  })
+
+  test('lists board titles from every attached workspace without switching', async () => {
+    await createBoard('Alpha')
+    const other = await mkdtemp(path.join(os.tmpdir(), 'diagramkit-search-'))
+    try {
+      await attachWorkspace(other, 'Other')
+      await createBoard('Beta')
+      const active = await listAttachedWorkspaces()
+      expect(active.activePath).toBe(other)
+      const listed = await listAllBoards()
+      expect(listed.boards.map(b => b.title).sort()).toEqual(['Alpha', 'Beta', 'Home', 'Home'])
+      expect(listed.boards.filter(b => b.workspaceName === 'Other').map(b => b.title).sort()).toEqual(['Beta', 'Home'])
+      expect((await listAttachedWorkspaces()).activePath).toBe(other)
+    } finally {
+      await rm(other, { recursive: true, force: true })
+    }
   })
 })

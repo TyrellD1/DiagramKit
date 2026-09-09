@@ -32,3 +32,7 @@ export function isPasteKey(e: KeyboardEvent) {
 export function isDuplicateKey(e: KeyboardEvent) {
   return isMod(e) && (e.key === 'd' || e.key === 'D')
 }
+
+export function isSearchKey(e: KeyboardEvent) {
+  return isMod(e) && (e.key === 'p' || e.key === 'P')
+}

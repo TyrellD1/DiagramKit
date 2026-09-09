@@ -24,6 +24,7 @@ interface Props {
   onTidy?: () => void
   canTidy?: boolean
   onOpenHistory?: () => void
+  sidebarGutter?: number
 }
 
 function isTyping(target: EventTarget | null) {
@@ -60,6 +61,7 @@ export default function CanvasToolbar({
   onTidy,
   canTidy,
   onOpenHistory,
+  sidebarGutter = 0,
 }: Props) {
   const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow()
   const { zoom } = useViewport()
@@ -79,7 +81,11 @@ export default function CanvasToolbar({
   }, [onModeChange, fitView])
 
   return (
-    <Panel position="bottom-left" className="pointer-events-auto !m-3">
+    <Panel
+      position={sidebarGutter ? 'bottom-center' : 'bottom-left'}
+      className="pointer-events-auto !m-3"
+      style={sidebarGutter ? { left: `calc(50% + ${sidebarGutter / 2}px)` } : undefined}
+    >
       <div className={cn('flex items-center gap-1 p-1', chromeClass)} role="toolbar" aria-label="Canvas tools">
         <div className="flex items-center gap-0.5" role="radiogroup" aria-label="Interaction mode">
           <button
